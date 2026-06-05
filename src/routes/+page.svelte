@@ -148,7 +148,7 @@
 	</section>
 
 	<!-- Matrix display -->
-	<section class="matrix-wrapper">
+	<section class="matrix-wrapper" style="height: {2.75*rows}rem;">
 		<div class="bracket left"></div>
 		<table class="matrix">
 			<tbody>
@@ -378,6 +378,7 @@
 		padding: 0.25rem 0.5rem;
 		font-size: 0.9rem;
 		width: 5rem;
+		height: 1.3rem;
 	}
 
 	select {
