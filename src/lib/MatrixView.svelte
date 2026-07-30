@@ -16,7 +16,7 @@
 	let rowGhostEl: HTMLDivElement | undefined;
 	let colGhostEl: HTMLDivElement | undefined;
 
-	const ghostCellClass = 'rounded-md bg-indigo-50 px-3 py-1.5 font-mono text-sm text-indigo-700';
+	const ghostCellClass = 'rounded-md px-3 py-1.5 font-mono text-sm text-indigo-700';
 
 	function selectRow(i: number) {
 		selectedRow = selectedRow === i ? null : i;
@@ -114,7 +114,7 @@
 {/snippet}
 
 <div class="inline-block overflow-auto rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
-	<table class="border-separate border-spacing-1">
+	<table class="border-collapse">
 		<thead>
 			<tr>
 				<th class="w-10"></th>
