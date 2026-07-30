@@ -202,7 +202,7 @@
 					</th>
 					{#each row as value, j (j)}
 						{@const isSelected = selectedRow === i || selectedCol === j}
-						{@const isHovered = hoveredRow === i || hoveredCol === j}
+						{@const isHovered = !isAnyDragActive && (hoveredRow === i || hoveredCol === j)}
 						{@const isDragging = draggedRow === i || draggedCol === j}
 						{@const previewValue =
 							draggedRow !== null && dragTargetRow === i && draggedRow !== i
