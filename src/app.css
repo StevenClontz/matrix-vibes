@@ -1,1 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital@0;1&display=swap');
 @import 'tailwindcss';
+
+.font-mathnum {
+	font-family: 'STIX Two Text', 'Cambria Math', Georgia, 'Times New Roman', serif;
+	font-variant-numeric: lining-nums;
+}

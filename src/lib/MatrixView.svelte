@@ -16,7 +16,7 @@
 	let rowGhostEl: HTMLDivElement | undefined;
 	let colGhostEl: HTMLDivElement | undefined;
 
-	const ghostCellClass = 'rounded-md px-3 py-1.5 font-mono text-sm text-indigo-700';
+	const ghostCellClass = 'rounded-md px-3 py-1.5 font-mathnum text-indigo-700';
 
 	function selectRow(i: number) {
 		selectedRow = selectedRow === i ? null : i;
@@ -122,8 +122,8 @@
 					<th
 						class="cursor-grab select-none rounded-md p-2 text-center align-middle transition-colors active:cursor-grabbing {selectedCol ===
 						j
-							? 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200'
-							: 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}"
+							? 'text-indigo-600'
+							: 'text-slate-400 hover:text-slate-600'}"
 						draggable="true"
 						tabindex="0"
 						aria-label={`Column ${j + 1}`}
@@ -152,8 +152,8 @@
 					<th
 						class="cursor-grab select-none rounded-md p-2 text-center align-middle transition-colors active:cursor-grabbing {selectedRow ===
 						i
-							? 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200'
-							: 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}"
+							? 'text-indigo-600'
+							: 'text-slate-400 hover:text-slate-600'}"
 						draggable="true"
 						tabindex="0"
 						aria-label={`Row ${i + 1}`}
@@ -178,17 +178,19 @@
 						{@const isHovered = hoveredRow === i || hoveredCol === j}
 						{@const isDragging = draggedRow === i || draggedCol === j}
 						<td
-							class="min-w-12 rounded-md px-3 py-1.5 text-center font-mono text-sm text-slate-700 transition-colors {isDragging
+							class="min-w-12 px-2 py-1"
+							ondragover={allowDrop}
+							ondrop={(e) => onCellDrop(i, j, e)}
+						>
+							<div class="rounded-md px-3 py-1.5 min-w-10 text-center font-mathnum text-slate-700 transition-colors {isDragging
 								? 'opacity-40'
 								: isSelected
 									? 'bg-indigo-100'
 									: isHovered
 										? 'bg-indigo-50'
-										: ''}"
-							ondragover={allowDrop}
-							ondrop={(e) => onCellDrop(i, j, e)}
-						>
-							{formatNum(value)}
+										: ''}">
+								{formatNum(value)}
+							</div>
 						</td>
 					{/each}
 				</tr>
