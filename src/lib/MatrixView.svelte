@@ -13,10 +13,45 @@
 	let draggedRow = $state<number | null>(null);
 	let draggedCol = $state<number | null>(null);
 
-	let rowGhostEl: HTMLDivElement | undefined;
-	let colGhostEl: HTMLDivElement | undefined;
+	// Row/column currently under the cursor during an active drag. Separate from
+	// hoveredRow/hoveredCol (mouse-only) because native drag doesn't fire mouseenter/mouseleave.
+	let dragTargetRow = $state<number | null>(null);
+	let dragTargetCol = $state<number | null>(null);
 
-	const ghostCellClass = 'rounded-md px-3 py-1.5 font-mathnum text-indigo-700';
+	let ghostValues = $state<number[] | null>(null);
+	let ghostOrientation = $state<'row' | 'col' | null>(null);
+	let ghostX = $state(0);
+	let ghostY = $state(0);
+
+	let isOverDragTarget = $derived(
+		(ghostOrientation === 'row' && dragTargetRow !== null && dragTargetRow !== draggedRow) ||
+			(ghostOrientation === 'col' && dragTargetCol !== null && dragTargetCol !== draggedCol)
+	);
+
+	let transparentDragImage: HTMLImageElement | undefined;
+	function getTransparentDragImage() {
+		if (!transparentDragImage) {
+			transparentDragImage = new Image();
+			transparentDragImage.src =
+				'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ycAAAAAAQABAAACAUwAOw==';
+		}
+		return transparentDragImage;
+	}
+
+	function trackGhostPosition(e: DragEvent) {
+		// Browsers fire a final dragover with clientX/clientY at 0,0 right before dragend; ignore it.
+		if (e.clientX === 0 && e.clientY === 0) return;
+		ghostX = e.clientX;
+		ghostY = e.clientY;
+	}
+
+	function startGhostTracking() {
+		window.addEventListener('dragover', trackGhostPosition);
+	}
+
+	function stopGhostTracking() {
+		window.removeEventListener('dragover', trackGhostPosition);
+	}
 
 	function selectRow(i: number) {
 		selectedRow = selectedRow === i ? null : i;
@@ -30,15 +65,16 @@
 
 	function onRowDragStart(i: number, e: DragEvent) {
 		draggedRow = i;
+		ghostValues = matrix[i];
+		ghostOrientation = 'row';
+		ghostX = e.clientX;
+		ghostY = e.clientY;
 		e.dataTransfer?.setData('text/plain', String(i));
-		if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
-
-		if (e.dataTransfer && rowGhostEl) {
-			rowGhostEl.innerHTML = matrix[i]
-				.map((v) => `<span class="${ghostCellClass}">${formatNum(v)}</span>`)
-				.join('');
-			e.dataTransfer.setDragImage(rowGhostEl, rowGhostEl.offsetWidth / 2, rowGhostEl.offsetHeight / 2);
+		if (e.dataTransfer) {
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setDragImage(getTransparentDragImage(), 0, 0);
 		}
+		startGhostTracking();
 	}
 
 	function onRowDrop(i: number, e: DragEvent) {
@@ -51,15 +87,16 @@
 
 	function onColDragStart(j: number, e: DragEvent) {
 		draggedCol = j;
+		ghostValues = matrix.map((row) => row[j]);
+		ghostOrientation = 'col';
+		ghostX = e.clientX;
+		ghostY = e.clientY;
 		e.dataTransfer?.setData('text/plain', String(j));
-		if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
-
-		if (e.dataTransfer && colGhostEl) {
-			colGhostEl.innerHTML = matrix
-				.map((row) => `<span class="${ghostCellClass}">${formatNum(row[j])}</span>`)
-				.join('');
-			e.dataTransfer.setDragImage(colGhostEl, colGhostEl.offsetWidth / 2, colGhostEl.offsetHeight / 2);
+		if (e.dataTransfer) {
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setDragImage(getTransparentDragImage(), 0, 0);
 		}
+		startGhostTracking();
 	}
 
 	function onColDrop(j: number, e: DragEvent) {
@@ -70,6 +107,22 @@
 		draggedCol = null;
 	}
 
+	function onRowHandleDragOver(i: number, e: DragEvent) {
+		e.preventDefault();
+		if (draggedRow !== null) dragTargetRow = i;
+	}
+
+	function onColHandleDragOver(j: number, e: DragEvent) {
+		e.preventDefault();
+		if (draggedCol !== null) dragTargetCol = j;
+	}
+
+	function onCellDragOver(i: number, j: number, e: DragEvent) {
+		e.preventDefault();
+		if (draggedRow !== null) dragTargetRow = i;
+		if (draggedCol !== null) dragTargetCol = j;
+	}
+
 	function onCellDrop(i: number, j: number, e: DragEvent) {
 		if (draggedRow !== null) {
 			onRowDrop(i, e);
@@ -78,15 +131,23 @@
 		}
 	}
 
+	function onTableDragLeave(e: DragEvent) {
+		const related = e.relatedTarget as Node | null;
+		const table = e.currentTarget as HTMLElement;
+		if (!related || !table.contains(related)) {
+			dragTargetRow = null;
+			dragTargetCol = null;
+		}
+	}
+
 	function onDragEnd() {
 		draggedRow = null;
 		draggedCol = null;
-		if (rowGhostEl) rowGhostEl.innerHTML = '';
-		if (colGhostEl) colGhostEl.innerHTML = '';
-	}
-
-	function allowDrop(e: DragEvent) {
-		e.preventDefault();
+		dragTargetRow = null;
+		dragTargetCol = null;
+		ghostValues = null;
+		ghostOrientation = null;
+		stopGhostTracking();
 	}
 
 	function onHeaderKeydown(e: KeyboardEvent, action: () => void) {
@@ -113,8 +174,8 @@
 	</svg>
 {/snippet}
 
-<div class="inline-block overflow-auto rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
-	<table class="border-collapse">
+<div class="inline-block overflow-auto rounded-lg border border-slate-300 bg-white p-4 shadow-sm select-none">
+	<table class="border-collapse" ondragleave={onTableDragLeave}>
 		<thead>
 			<tr>
 				<th class="w-10"></th>
@@ -122,7 +183,7 @@
 					<th
 						class="cursor-grab select-none rounded-md p-2 text-center align-middle transition-colors active:cursor-grabbing {selectedCol ===
 						j
-							? 'text-indigo-600'
+							? 'text-violet-600'
 							: 'text-slate-400 hover:text-slate-600'}"
 						draggable="true"
 						tabindex="0"
@@ -136,7 +197,7 @@
 						onblur={() => (hoveredCol = null)}
 						ondragstart={(e) => onColDragStart(j, e)}
 						ondragend={onDragEnd}
-						ondragover={allowDrop}
+						ondragover={(e) => onColHandleDragOver(j, e)}
 						ondrop={(e) => onColDrop(j, e)}
 					>
 						<span class="flex h-4 items-center justify-center">
@@ -152,7 +213,7 @@
 					<th
 						class="cursor-grab select-none rounded-md p-2 text-center align-middle transition-colors active:cursor-grabbing {selectedRow ===
 						i
-							? 'text-indigo-600'
+							? 'text-violet-600'
 							: 'text-slate-400 hover:text-slate-600'}"
 						draggable="true"
 						tabindex="0"
@@ -166,7 +227,7 @@
 						onblur={() => (hoveredRow = null)}
 						ondragstart={(e) => onRowDragStart(i, e)}
 						ondragend={onDragEnd}
-						ondragover={allowDrop}
+						ondragover={(e) => onRowHandleDragOver(i, e)}
 						ondrop={(e) => onRowDrop(i, e)}
 					>
 						<span class="flex h-4 items-center justify-center">
@@ -177,19 +238,36 @@
 						{@const isSelected = selectedRow === i || selectedCol === j}
 						{@const isHovered = hoveredRow === i || hoveredCol === j}
 						{@const isDragging = draggedRow === i || draggedCol === j}
+						{@const previewValue =
+							draggedRow !== null && dragTargetRow === i && draggedRow !== i
+								? matrix[draggedRow][j]
+								: draggedCol !== null && dragTargetCol === j && draggedCol !== j
+									? matrix[i][draggedCol]
+									: null}
 						<td
 							class="min-w-12 px-2 py-1"
-							ondragover={allowDrop}
+							ondragover={(e) => onCellDragOver(i, j, e)}
 							ondrop={(e) => onCellDrop(i, j, e)}
 						>
-							<div class="rounded-md px-3 py-1.5 min-w-10 text-center font-mathnum text-slate-700 transition-colors {isDragging
-								? 'opacity-40'
-								: isSelected
-									? 'bg-indigo-100'
-									: isHovered
-										? 'bg-indigo-50'
-										: ''}">
-								{formatNum(value)}
+							<div
+								class="flex min-w-10 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-center font-mathnum text-slate-700 transition-colors {isDragging
+									? ''
+									: previewValue !== null
+										? 'bg-violet-50'
+										: isSelected
+											? 'bg-violet-100'
+											: isHovered
+												? 'bg-violet-50'
+												: ''}"
+							>
+								{#if previewValue !== null}
+									<span class="decoration-slate-300"
+										>{formatNum(value)}</span
+									>
+									<span class="font-semibold text-violet-600">{formatNum(previewValue)}</span>
+								{:else}
+									{formatNum(value)}
+								{/if}
 							</div>
 						</td>
 					{/each}
@@ -199,11 +277,15 @@
 	</table>
 </div>
 
-<div
-	bind:this={rowGhostEl}
-	class="pointer-events-none fixed -top-[9999px] -left-[9999px] flex flex-row items-center gap-1 rounded-lg border border-indigo-200 bg-white/90 p-2 opacity-60 shadow-lg"
-></div>
-<div
-	bind:this={colGhostEl}
-	class="pointer-events-none fixed -top-[9999px] -left-[9999px] flex flex-col items-center gap-1 rounded-lg border border-indigo-200 bg-white/90 p-2 opacity-60 shadow-lg"
-></div>
+{#if ghostValues && !isOverDragTarget}
+	<div
+		class="pointer-events-none fixed z-50 flex {ghostOrientation === 'row'
+			? 'flex-row'
+			: 'flex-col'} items-center gap-1 rounded-lg border border-violet-200 bg-white/90 p-2 opacity-60 shadow-lg"
+		style="left: {ghostX}px; top: {ghostY}px; transform: translate(-50%, -50%);"
+	>
+		{#each ghostValues as v}
+			<span class="rounded-md px-3 py-1.5 font-mathnum text-violet-700">{formatNum(v)}</span>
+		{/each}
+	</div>
+{/if}
