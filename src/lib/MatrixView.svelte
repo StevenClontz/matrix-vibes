@@ -14,7 +14,7 @@
 	let draggedCol = $state<number | null>(null);
 
 	// Row/column currently under the cursor during an active drag. Separate from
-	// hoveredRow/hoveredCol (mouse-only) because native drag doesn't fire mouseenter/mouseleave.
+	// hoveredRow/hoveredCol (mouse-hover-only, used for the non-drag highlight feature).
 	let dragTargetRow = $state<number | null>(null);
 	let dragTargetCol = $state<number | null>(null);
 
@@ -23,34 +23,92 @@
 	let ghostX = $state(0);
 	let ghostY = $state(0);
 
+	let isAnyDragActive = $derived(draggedRow !== null || draggedCol !== null);
+
 	let isOverDragTarget = $derived(
 		(ghostOrientation === 'row' && dragTargetRow !== null && dragTargetRow !== draggedRow) ||
 			(ghostOrientation === 'col' && dragTargetCol !== null && dragTargetCol !== draggedCol)
 	);
 
-	let transparentDragImage: HTMLImageElement | undefined;
-	function getTransparentDragImage() {
-		if (!transparentDragImage) {
-			transparentDragImage = new Image();
-			transparentDragImage.src =
-				'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ycAAAAAAQABAAACAUwAOw==';
+	// Plain pointer-based drag (mousedown/mousemove/mouseup) instead of the native HTML5
+	// draggable/dragstart API: native drag hands cursor rendering to the browser/OS, which is
+	// unreliable across environments (e.g. shows a "no-drop" cursor outside our control). Doing
+	// our own tracking means the cursor is just CSS, fully within our control the whole time.
+	const DRAG_THRESHOLD = 4;
+	let pendingDrag: { kind: 'row' | 'col'; index: number; startX: number; startY: number } | null =
+		null;
+
+	function updateDragTarget(x: number, y: number) {
+		const el = document.elementFromPoint(x, y);
+		if (draggedRow !== null) {
+			const rowEl = el?.closest<HTMLElement>('[data-row]') ?? null;
+			dragTargetRow = rowEl ? Number(rowEl.dataset.row) : null;
 		}
-		return transparentDragImage;
+		if (draggedCol !== null) {
+			const colEl = el?.closest<HTMLElement>('[data-col]') ?? null;
+			dragTargetCol = colEl ? Number(colEl.dataset.col) : null;
+		}
 	}
 
-	function trackGhostPosition(e: DragEvent) {
-		// Browsers fire a final dragover with clientX/clientY at 0,0 right before dragend; ignore it.
-		if (e.clientX === 0 && e.clientY === 0) return;
+	function onPointerMove(e: MouseEvent) {
+		if (!pendingDrag) return;
+
+		if (draggedRow === null && draggedCol === null) {
+			const dx = e.clientX - pendingDrag.startX;
+			const dy = e.clientY - pendingDrag.startY;
+			if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+
+			if (pendingDrag.kind === 'row') {
+				draggedRow = pendingDrag.index;
+				ghostValues = matrix[pendingDrag.index];
+				ghostOrientation = 'row';
+			} else {
+				draggedCol = pendingDrag.index;
+				ghostValues = matrix.map((row) => row[pendingDrag!.index]);
+				ghostOrientation = 'col';
+			}
+			document.body.style.cursor = 'grabbing';
+		}
+
 		ghostX = e.clientX;
 		ghostY = e.clientY;
+		updateDragTarget(e.clientX, e.clientY);
 	}
 
-	function startGhostTracking() {
-		window.addEventListener('dragover', trackGhostPosition);
+	function onPointerUp() {
+		window.removeEventListener('mousemove', onPointerMove);
+		window.removeEventListener('mouseup', onPointerUp);
+
+		if (draggedRow !== null) {
+			if (dragTargetRow !== null && dragTargetRow !== draggedRow) {
+				alert(`Dropped row R${draggedRow + 1} onto row R${dragTargetRow + 1}`);
+			}
+		} else if (draggedCol !== null) {
+			if (dragTargetCol !== null && dragTargetCol !== draggedCol) {
+				alert(`Dropped column C${draggedCol + 1} onto column C${dragTargetCol + 1}`);
+			}
+		} else if (pendingDrag) {
+			// Mouse never moved past the threshold: treat it as a click, not a drag.
+			if (pendingDrag.kind === 'row') selectRow(pendingDrag.index);
+			else selectCol(pendingDrag.index);
+		}
+
+		pendingDrag = null;
+		draggedRow = null;
+		draggedCol = null;
+		dragTargetRow = null;
+		dragTargetCol = null;
+		ghostValues = null;
+		ghostOrientation = null;
+		document.body.style.cursor = '';
 	}
 
-	function stopGhostTracking() {
-		window.removeEventListener('dragover', trackGhostPosition);
+	function onHandlePointerDown(kind: 'row' | 'col', index: number, e: MouseEvent) {
+		if (e.button !== 0) return;
+		e.preventDefault(); // avoid native text-selection drag while we track the mouse ourselves
+		pendingDrag = { kind, index, startX: e.clientX, startY: e.clientY };
+		window.addEventListener('mousemove', onPointerMove);
+		window.addEventListener('mouseup', onPointerUp);
 	}
 
 	function selectRow(i: number) {
@@ -61,93 +119,6 @@
 	function selectCol(j: number) {
 		selectedCol = selectedCol === j ? null : j;
 		alert(`Selected column C${j + 1}`);
-	}
-
-	function onRowDragStart(i: number, e: DragEvent) {
-		draggedRow = i;
-		ghostValues = matrix[i];
-		ghostOrientation = 'row';
-		ghostX = e.clientX;
-		ghostY = e.clientY;
-		e.dataTransfer?.setData('text/plain', String(i));
-		if (e.dataTransfer) {
-			e.dataTransfer.effectAllowed = 'move';
-			e.dataTransfer.setDragImage(getTransparentDragImage(), 0, 0);
-		}
-		startGhostTracking();
-	}
-
-	function onRowDrop(i: number, e: DragEvent) {
-		e.preventDefault();
-		if (draggedRow !== null && draggedRow !== i) {
-			alert(`Dropped row R${draggedRow + 1} onto row R${i + 1}`);
-		}
-		draggedRow = null;
-	}
-
-	function onColDragStart(j: number, e: DragEvent) {
-		draggedCol = j;
-		ghostValues = matrix.map((row) => row[j]);
-		ghostOrientation = 'col';
-		ghostX = e.clientX;
-		ghostY = e.clientY;
-		e.dataTransfer?.setData('text/plain', String(j));
-		if (e.dataTransfer) {
-			e.dataTransfer.effectAllowed = 'move';
-			e.dataTransfer.setDragImage(getTransparentDragImage(), 0, 0);
-		}
-		startGhostTracking();
-	}
-
-	function onColDrop(j: number, e: DragEvent) {
-		e.preventDefault();
-		if (draggedCol !== null && draggedCol !== j) {
-			alert(`Dropped column C${draggedCol + 1} onto column C${j + 1}`);
-		}
-		draggedCol = null;
-	}
-
-	function onRowHandleDragOver(i: number, e: DragEvent) {
-		e.preventDefault();
-		if (draggedRow !== null) dragTargetRow = i;
-	}
-
-	function onColHandleDragOver(j: number, e: DragEvent) {
-		e.preventDefault();
-		if (draggedCol !== null) dragTargetCol = j;
-	}
-
-	function onCellDragOver(i: number, j: number, e: DragEvent) {
-		e.preventDefault();
-		if (draggedRow !== null) dragTargetRow = i;
-		if (draggedCol !== null) dragTargetCol = j;
-	}
-
-	function onCellDrop(i: number, j: number, e: DragEvent) {
-		if (draggedRow !== null) {
-			onRowDrop(i, e);
-		} else if (draggedCol !== null) {
-			onColDrop(j, e);
-		}
-	}
-
-	function onTableDragLeave(e: DragEvent) {
-		const related = e.relatedTarget as Node | null;
-		const table = e.currentTarget as HTMLElement;
-		if (!related || !table.contains(related)) {
-			dragTargetRow = null;
-			dragTargetCol = null;
-		}
-	}
-
-	function onDragEnd() {
-		draggedRow = null;
-		draggedCol = null;
-		dragTargetRow = null;
-		dragTargetCol = null;
-		ghostValues = null;
-		ghostOrientation = null;
-		stopGhostTracking();
 	}
 
 	function onHeaderKeydown(e: KeyboardEvent, action: () => void) {
@@ -175,30 +146,28 @@
 {/snippet}
 
 <div class="inline-block overflow-auto rounded-lg border border-slate-300 bg-white p-4 shadow-sm select-none">
-	<table class="border-collapse" ondragleave={onTableDragLeave}>
+	<table class="border-collapse">
 		<thead>
 			<tr>
 				<th class="w-10"></th>
 				{#each matrix[0] ?? [] as _, j (j)}
 					<th
-						class="cursor-grab select-none rounded-md p-2 text-center align-middle transition-colors active:cursor-grabbing {selectedCol ===
+						class="{isAnyDragActive
+							? 'cursor-grabbing'
+							: 'cursor-grab'} select-none rounded-md p-2 text-center align-middle transition-colors {selectedCol ===
 						j
 							? 'text-violet-600'
 							: 'text-slate-400 hover:text-slate-600'}"
-						draggable="true"
+						data-col={j}
 						tabindex="0"
 						aria-label={`Column ${j + 1}`}
 						title={`Column ${j + 1}`}
-						onclick={() => selectCol(j)}
 						onkeydown={(e) => onHeaderKeydown(e, () => selectCol(j))}
 						onmouseenter={() => (hoveredCol = j)}
 						onmouseleave={() => (hoveredCol = null)}
 						onfocus={() => (hoveredCol = j)}
 						onblur={() => (hoveredCol = null)}
-						ondragstart={(e) => onColDragStart(j, e)}
-						ondragend={onDragEnd}
-						ondragover={(e) => onColHandleDragOver(j, e)}
-						ondrop={(e) => onColDrop(j, e)}
+						onmousedown={(e) => onHandlePointerDown('col', j, e)}
 					>
 						<span class="flex h-4 items-center justify-center">
 							{@render handleIcon()}
@@ -209,26 +178,23 @@
 		</thead>
 		<tbody>
 			{#each matrix as row, i (i)}
-				<tr>
+				<tr data-row={i}>
 					<th
-						class="cursor-grab select-none rounded-md p-2 text-center align-middle transition-colors active:cursor-grabbing {selectedRow ===
+						class="{isAnyDragActive
+							? 'cursor-grabbing'
+							: 'cursor-grab'} select-none rounded-md p-2 text-center align-middle transition-colors {selectedRow ===
 						i
 							? 'text-violet-600'
 							: 'text-slate-400 hover:text-slate-600'}"
-						draggable="true"
 						tabindex="0"
 						aria-label={`Row ${i + 1}`}
 						title={`Row ${i + 1}`}
-						onclick={() => selectRow(i)}
 						onkeydown={(e) => onHeaderKeydown(e, () => selectRow(i))}
 						onmouseenter={() => (hoveredRow = i)}
 						onmouseleave={() => (hoveredRow = null)}
 						onfocus={() => (hoveredRow = i)}
 						onblur={() => (hoveredRow = null)}
-						ondragstart={(e) => onRowDragStart(i, e)}
-						ondragend={onDragEnd}
-						ondragover={(e) => onRowHandleDragOver(i, e)}
-						ondrop={(e) => onRowDrop(i, e)}
+						onmousedown={(e) => onHandlePointerDown('row', i, e)}
 					>
 						<span class="flex h-4 items-center justify-center">
 							{@render handleIcon()}
@@ -244,11 +210,7 @@
 								: draggedCol !== null && dragTargetCol === j && draggedCol !== j
 									? matrix[i][draggedCol]
 									: null}
-						<td
-							class="min-w-12 px-2 py-1"
-							ondragover={(e) => onCellDragOver(i, j, e)}
-							ondrop={(e) => onCellDrop(i, j, e)}
-						>
+						<td class="min-w-12 px-2 py-1" data-col={j}>
 							<div
 								class="flex min-w-10 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-center font-mathnum text-slate-700 transition-colors {isDragging
 									? ''
@@ -261,9 +223,7 @@
 												: ''}"
 							>
 								{#if previewValue !== null}
-									<span class="decoration-slate-300"
-										>{formatNum(value)}</span
-									>
+									<span class="decoration-slate-300">{formatNum(value)}</span>
 									<span class="font-semibold text-violet-600">{formatNum(previewValue)}</span>
 								{:else}
 									{formatNum(value)}
