@@ -70,6 +70,14 @@
 		draggedCol = null;
 	}
 
+	function onCellDrop(i: number, j: number, e: DragEvent) {
+		if (draggedRow !== null) {
+			onRowDrop(i, e);
+		} else if (draggedCol !== null) {
+			onColDrop(j, e);
+		}
+	}
+
 	function onDragEnd() {
 		draggedRow = null;
 		draggedCol = null;
@@ -177,6 +185,8 @@
 									: isHovered
 										? 'bg-indigo-50'
 										: ''}"
+							ondragover={allowDrop}
+							ondrop={(e) => onCellDrop(i, j, e)}
 						>
 							{formatNum(value)}
 						</td>
