@@ -157,7 +157,7 @@
 							: 'cursor-grab'} select-none rounded-md p-2 text-center align-middle transition-colors {selectedCol ===
 						j
 							? 'text-violet-600'
-							: 'text-slate-400 hover:text-slate-600'}"
+							: 'text-slate-200 hover:text-slate-400'}"
 						data-col={j}
 						tabindex="0"
 						aria-label={`Column ${j + 1}`}
@@ -185,7 +185,7 @@
 							: 'cursor-grab'} select-none rounded-md p-2 text-center align-middle transition-colors {selectedRow ===
 						i
 							? 'text-violet-600'
-							: 'text-slate-400 hover:text-slate-600'}"
+							: 'text-slate-200 hover:text-slate-400'}"
 						tabindex="0"
 						aria-label={`Row ${i + 1}`}
 						title={`Row ${i + 1}`}
