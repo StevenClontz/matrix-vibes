@@ -1,11 +1,31 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import type { Matrix } from './matrix';
-	import { formatNum } from './matrix';
+	import {
+		formatNum,
+		scaleRow,
+		scaleCol,
+		swapRows,
+		swapCols,
+		addScaledRow,
+		addScaledCol,
+		describeScaleRow,
+		describeScaleCol,
+		describeSwapRows,
+		describeSwapCols,
+		describeAddScaledRow,
+		describeAddScaledCol
+	} from './matrix';
 
-	let { matrix }: { matrix: Matrix } = $props();
+	let { matrix = $bindable() }: { matrix: Matrix } = $props();
 
 	let selectedRow = $state<number | null>(null);
 	let selectedCol = $state<number | null>(null);
+
+	let dropAction = $state<{ kind: 'row' | 'col'; source: number; target: number } | null>(null);
+	let dropMode = $state<'swap' | 'combine'>('swap');
+
+	let scaleFactor = $state(1);
 
 	let hoveredRow = $state<number | null>(null);
 	let hoveredCol = $state<number | null>(null);
@@ -79,15 +99,19 @@
 		window.removeEventListener('mousemove', onPointerMove);
 		window.removeEventListener('mouseup', onPointerUp);
 
-		if (draggedRow !== null) {
-			if (dragTargetRow !== null && dragTargetRow !== draggedRow) {
-				alert(`Dropped row R${draggedRow + 1} onto row R${dragTargetRow + 1}`);
-			}
-		} else if (draggedCol !== null) {
-			if (dragTargetCol !== null && dragTargetCol !== draggedCol) {
-				alert(`Dropped column C${draggedCol + 1} onto column C${dragTargetCol + 1}`);
-			}
-		} else if (pendingDrag) {
+		if (draggedRow !== null && dragTargetRow !== null && dragTargetRow !== draggedRow) {
+			selectedRow = null;
+			selectedCol = null;
+			dropMode = 'swap';
+			scaleFactor = 1;
+			dropAction = { kind: 'row', source: draggedRow, target: dragTargetRow };
+		} else if (draggedCol !== null && dragTargetCol !== null && dragTargetCol !== draggedCol) {
+			selectedRow = null;
+			selectedCol = null;
+			dropMode = 'swap';
+			scaleFactor = 1;
+			dropAction = { kind: 'col', source: draggedCol, target: dragTargetCol };
+		} else if (draggedRow === null && draggedCol === null && pendingDrag) {
 			// Mouse never moved past the threshold: treat it as a click, not a drag.
 			if (pendingDrag.kind === 'row') selectRow(pendingDrag.index);
 			else selectCol(pendingDrag.index);
@@ -112,13 +136,67 @@
 	}
 
 	function selectRow(i: number) {
-		selectedRow = selectedRow === i ? null : i;
-		alert(`Selected row R${i + 1}`);
+		if (selectedRow === i) {
+			selectedRow = null;
+		} else {
+			selectedRow = i;
+			selectedCol = null;
+			scaleFactor = 1;
+			dropAction = null;
+		}
 	}
 
 	function selectCol(j: number) {
-		selectedCol = selectedCol === j ? null : j;
-		alert(`Selected column C${j + 1}`);
+		if (selectedCol === j) {
+			selectedCol = null;
+		} else {
+			selectedCol = j;
+			selectedRow = null;
+			scaleFactor = 1;
+			dropAction = null;
+		}
+	}
+
+	function applyScale() {
+		if (selectedRow !== null) {
+			matrix = scaleRow(matrix, selectedRow, scaleFactor);
+		} else if (selectedCol !== null) {
+			matrix = scaleCol(matrix, selectedCol, scaleFactor);
+		}
+		scaleFactor = 1;
+		selectedRow = null;
+		selectedCol = null;
+	}
+
+	function cancelScale() {
+		scaleFactor = 1;
+		selectedRow = null;
+		selectedCol = null;
+	}
+
+	function applyDropAction() {
+		if (!dropAction) return;
+		const { kind, source, target } = dropAction;
+		if (kind === 'row') {
+			matrix =
+				dropMode === 'swap'
+					? swapRows(matrix, source, target)
+					: addScaledRow(matrix, target, source, scaleFactor);
+		} else {
+			matrix =
+				dropMode === 'swap'
+					? swapCols(matrix, source, target)
+					: addScaledCol(matrix, target, source, scaleFactor);
+		}
+		dropAction = null;
+		dropMode = 'swap';
+		scaleFactor = 1;
+	}
+
+	function cancelDropAction() {
+		dropAction = null;
+		dropMode = 'swap';
+		scaleFactor = 1;
 	}
 
 	function onHeaderKeydown(e: KeyboardEvent, action: () => void) {
@@ -204,12 +282,17 @@
 						{@const isSelected = selectedRow === i || selectedCol === j}
 						{@const isHovered = !isAnyDragActive && (hoveredRow === i || hoveredCol === j)}
 						{@const isDragging = draggedRow === i || draggedCol === j}
-						{@const previewValue =
+						{@const dragPreviewValue =
 							draggedRow !== null && dragTargetRow === i && draggedRow !== i
 								? matrix[draggedRow][j]
 								: draggedCol !== null && dragTargetCol === j && draggedCol !== j
 									? matrix[i][draggedCol]
 									: null}
+						{@const scalePreviewValue =
+							scaleFactor !== 1 && (selectedRow === i || selectedCol === j)
+								? value * scaleFactor
+								: null}
+						{@const previewValue = dragPreviewValue ?? scalePreviewValue}
 						<td class="min-w-12 px-2 py-1" data-col={j}>
 							<div
 								class="flex min-w-10 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-center font-mathnum text-slate-700 transition-colors {isDragging
@@ -235,7 +318,80 @@
 			{/each}
 		</tbody>
 	</table>
+
+	{#if selectedRow !== null || selectedCol !== null}
+		{@const description =
+			selectedRow !== null
+				? describeScaleRow(selectedRow, scaleFactor)
+				: describeScaleCol(selectedCol!, scaleFactor)}
+		{@render controlPanel(description, applyScale, cancelScale, scaleControls)}
+	{/if}
+
+	{#if dropAction}
+		{@const { kind, source, target } = dropAction}
+		{@const description =
+			dropMode === 'swap'
+				? kind === 'row'
+					? describeSwapRows(source, target)
+					: describeSwapCols(source, target)
+				: kind === 'row'
+					? describeAddScaledRow(target, source, scaleFactor)
+					: describeAddScaledCol(target, source, scaleFactor)}
+		{@render controlPanel(description, applyDropAction, cancelDropAction, dropControls)}
+	{/if}
 </div>
+
+{#snippet controlPanel(
+	description: string,
+	onSubmit: () => void,
+	onCancel: () => void,
+	controls: Snippet
+)}
+	<div class="mt-3 flex flex-col gap-2 border-t border-slate-200 pt-3 text-sm text-slate-600">
+		<div class="text-slate-700 flex flex-wrap items-center gap-3">
+			<span class="font-mathnum">{description}</span>
+			{@render controls()}
+		</div>
+		<div class="flex flex-wrap items-center gap-3">
+			<button
+				onclick={onSubmit}
+				class="rounded-md bg-violet-600 px-3 py-1 font-medium text-white transition-colors hover:bg-violet-700"
+			>
+				Submit
+			</button>
+			<button
+				onclick={onCancel}
+				class="rounded-md px-3 py-1 font-medium text-slate-500 transition-colors hover:bg-slate-100"
+			>
+				Cancel
+			</button>
+		</div>
+	</div>
+{/snippet}
+
+{#snippet scaleControls()}
+	<label>Scaling factor:
+	<input
+		type="number"
+		step="any"
+		bind:value={scaleFactor}
+		class="w-20 rounded-md border border-slate-300 px-2 py-1 font-mathnum text-slate-700 focus:border-violet-400 focus:outline-none"
+	/></label>
+{/snippet}
+
+{#snippet dropControls()}
+	<label class="flex items-center gap-1.5">
+		<input type="radio" name="dropMode" value="swap" bind:group={dropMode} />
+		Swap
+	</label>
+	<label class="flex items-center gap-1.5">
+		<input type="radio" name="dropMode" value="combine" bind:group={dropMode} />
+		Combine
+	</label>
+	{#if dropMode === 'combine'}
+		{@render scaleControls()}
+	{/if}
+{/snippet}
 
 {#if ghostValues && !isOverDragTarget}
 	<div
