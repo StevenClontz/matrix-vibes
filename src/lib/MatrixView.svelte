@@ -23,7 +23,7 @@
 	let selectedCol = $state<number | null>(null);
 
 	let dropAction = $state<{ kind: 'row' | 'col'; source: number; target: number } | null>(null);
-	let dropMode = $state<'swap' | 'combine'>('swap');
+	let dropMode = $state<'swap' | 'combine'>('combine');
 
 	let scaleFactor = $state(1);
 
@@ -102,13 +102,13 @@
 		if (draggedRow !== null && dragTargetRow !== null && dragTargetRow !== draggedRow) {
 			selectedRow = null;
 			selectedCol = null;
-			dropMode = 'swap';
+			dropMode = 'combine';
 			scaleFactor = 1;
 			dropAction = { kind: 'row', source: draggedRow, target: dragTargetRow };
 		} else if (draggedCol !== null && dragTargetCol !== null && dragTargetCol !== draggedCol) {
 			selectedRow = null;
 			selectedCol = null;
-			dropMode = 'swap';
+			dropMode = 'combine';
 			scaleFactor = 1;
 			dropAction = { kind: 'col', source: draggedCol, target: dragTargetCol };
 		} else if (draggedRow === null && draggedCol === null && pendingDrag) {
@@ -189,14 +189,43 @@
 					: addScaledCol(matrix, target, source, scaleFactor);
 		}
 		dropAction = null;
-		dropMode = 'swap';
+		dropMode = 'combine';
 		scaleFactor = 1;
 	}
 
 	function cancelDropAction() {
 		dropAction = null;
-		dropMode = 'swap';
+		dropMode = 'combine';
 		scaleFactor = 1;
+	}
+
+	function computeDropPreview(i: number, j: number): { from: number; to: number } | null {
+		if (!dropAction) return null;
+		const { kind, source, target } = dropAction;
+		if (kind === 'row') {
+			if (i === target) {
+				const from = matrix[target][j];
+				const to = dropMode === 'swap' ? matrix[source][j] : from + scaleFactor * matrix[source][j];
+				return { from, to };
+			}
+			if (i === source) {
+				const from = matrix[source][j];
+				const to = dropMode === 'swap' ? matrix[target][j] : from;
+				return { from, to };
+			}
+			return null;
+		}
+		if (j === target) {
+			const from = matrix[i][target];
+			const to = dropMode === 'swap' ? matrix[i][source] : from + scaleFactor * matrix[i][source];
+			return { from, to };
+		}
+		if (j === source) {
+			const from = matrix[i][source];
+			const to = dropMode === 'swap' ? matrix[i][target] : from;
+			return { from, to };
+		}
+		return null;
 	}
 
 	function onHeaderKeydown(e: KeyboardEvent, action: () => void) {
@@ -279,35 +308,37 @@
 						</span>
 					</th>
 					{#each row as value, j (j)}
-						{@const isSelected = selectedRow === i || selectedCol === j}
 						{@const isHovered = !isAnyDragActive && (hoveredRow === i || hoveredCol === j)}
 						{@const isDragging = draggedRow === i || draggedCol === j}
-						{@const dragPreviewValue =
+						{@const dragPreview =
 							draggedRow !== null && dragTargetRow === i && draggedRow !== i
-								? matrix[draggedRow][j]
+								? { from: value, to: matrix[draggedRow][j] }
 								: draggedCol !== null && dragTargetCol === j && draggedCol !== j
-									? matrix[i][draggedCol]
+									? { from: value, to: matrix[i][draggedCol] }
 									: null}
-						{@const scalePreviewValue =
-							scaleFactor !== 1 && (selectedRow === i || selectedCol === j)
-								? value * scaleFactor
+						{@const scalePreview =
+							selectedRow === i || selectedCol === j
+								? { from: value, to: value * scaleFactor }
 								: null}
-						{@const previewValue = dragPreviewValue ?? scalePreviewValue}
+						{@const preview = dragPreview ?? scalePreview ?? computeDropPreview(i, j)}
 						<td class="min-w-12 px-2 py-1" data-col={j}>
 							<div
 								class="flex min-w-10 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-center font-mathnum text-slate-700 transition-colors {isDragging
 									? ''
-									: previewValue !== null
-										? 'bg-violet-50'
-										: isSelected
-											? 'bg-violet-100'
-											: isHovered
-												? 'bg-violet-50'
-												: ''}"
+									: preview
+										? preview.to !== preview.from
+											? 'bg-violet-50'
+											: 'bg-slate-100'
+										: isHovered
+											? 'bg-violet-50'
+											: ''}"
 							>
-								{#if previewValue !== null}
-									<span class="decoration-slate-300">{formatNum(value)}</span>
-									<span class="font-semibold text-violet-600">{formatNum(previewValue)}</span>
+								{#if preview}
+									<span class="text-slate-400">{formatNum(preview.from)}</span>
+									{#if preview.to !== preview.from}
+										<span class="text-slate-400">→</span>
+										<span class="font-semibold text-violet-600">{formatNum(preview.to)}</span>
+									{/if}
 								{:else}
 									{formatNum(value)}
 								{/if}
