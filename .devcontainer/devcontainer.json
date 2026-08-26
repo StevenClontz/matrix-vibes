@@ -1,0 +1,13 @@
+{
+	"name": "matrix-vibes",
+	"image": "mcr.microsoft.com/devcontainers/javascript-node:1-24-bookworm",
+	"postCreateCommand": "npm install",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"svelte.svelte-vscode",
+				"anthropic.claude-code"
+			]
+		}
+	}
+}
