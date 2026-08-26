@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import katex from 'katex';
 	import type { Matrix } from './matrix';
 	import {
 		formatNum,
@@ -351,16 +352,17 @@
 	</table>
 
 	{#if selectedRow !== null || selectedCol !== null}
-		{@const description =
+		{@const latex =
 			selectedRow !== null
 				? describeScaleRow(selectedRow, scaleFactor)
 				: describeScaleCol(selectedCol!, scaleFactor)}
-		{@render controlPanel(description, applyScale, cancelScale, scaleControls)}
+		{@const descriptionHtml = katex.renderToString(latex, { throwOnError: false })}
+		{@render controlPanel(descriptionHtml, applyScale, cancelScale, scaleControls)}
 	{/if}
 
 	{#if dropAction}
 		{@const { kind, source, target } = dropAction}
-		{@const description =
+		{@const latex =
 			dropMode === 'swap'
 				? kind === 'row'
 					? describeSwapRows(source, target)
@@ -368,19 +370,20 @@
 				: kind === 'row'
 					? describeAddScaledRow(target, source, scaleFactor)
 					: describeAddScaledCol(target, source, scaleFactor)}
-		{@render controlPanel(description, applyDropAction, cancelDropAction, dropControls)}
+		{@const descriptionHtml = katex.renderToString(latex, { throwOnError: false })}
+		{@render controlPanel(descriptionHtml, applyDropAction, cancelDropAction, dropControls)}
 	{/if}
 </div>
 
 {#snippet controlPanel(
-	description: string,
+	descriptionHtml: string,
 	onSubmit: () => void,
 	onCancel: () => void,
 	controls: Snippet
 )}
 	<div class="mt-3 flex flex-col gap-2 border-t border-slate-200 pt-3 text-sm text-slate-600">
 		<div class="text-slate-700 flex flex-wrap items-center gap-3">
-			<span class="font-mathnum">{description}</span>
+			<span>{@html descriptionHtml}</span>
 			{@render controls()}
 		</div>
 		<div class="flex flex-wrap items-center gap-3">

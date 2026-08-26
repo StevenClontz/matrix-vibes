@@ -67,30 +67,44 @@ export function formatNum(v: number): string {
 	return v.toFixed(3).replace(/\.?0+$/, '');
 }
 
+export function formatNumLatex(v: number): string {
+	if (Number.isInteger(v)) return String(v);
+	const denom = [2, 3, 4, 5, 6, 8, 10, 12];
+	for (const d of denom) {
+		const n = Math.round(v * d);
+		if (Math.abs(n / d - v) < 1e-9) {
+			if (n === d) return '1';
+			if (n === -d) return '-1';
+			return n < 0 ? `-\\frac{${-n}}{${d}}` : `\\frac{${n}}{${d}}`;
+		}
+	}
+	return v.toFixed(3).replace(/\.?0+$/, '');
+}
+
 export function describeSwapRows(r1: number, r2: number): string {
-	return `R${r1 + 1} ↔ R${r2 + 1}`;
+	return `R_{${r1 + 1}} \\leftrightarrow R_{${r2 + 1}}`;
 }
 
 export function describeScaleRow(r: number, scalar: number): string {
-	return `R${r + 1} ← ${formatNum(scalar)} · R${r + 1}`;
+	return `R_{${r + 1}} \\rightarrow ${formatNumLatex(scalar)} R_{${r + 1}}`;
 }
 
 export function describeAddScaledRow(target: number, source: number, scalar: number): string {
-	const s = formatNum(scalar);
-	const sign = scalar >= 0 ? `+ ${s}` : `− ${formatNum(Math.abs(scalar))}`;
-	return `R${target + 1} ← R${target + 1} ${sign} · R${source + 1}`;
+	const s = formatNumLatex(scalar);
+	const sign = scalar >= 0 ? `+ ${s}` : `- ${formatNumLatex(Math.abs(scalar))}`;
+	return `R_{${target + 1}} \\rightarrow R_{${target + 1}} ${sign} R_{${source + 1}}`;
 }
 
 export function describeSwapCols(c1: number, c2: number): string {
-	return `C${c1 + 1} ↔ C${c2 + 1}`;
+	return `C_{${c1 + 1}} \\leftrightarrow C_{${c2 + 1}}`;
 }
 
 export function describeScaleCol(c: number, scalar: number): string {
-	return `C${c + 1} ← ${formatNum(scalar)} · C${c + 1}`;
+	return `C_{${c + 1}} \\rightarrow ${formatNumLatex(scalar)} \\cdot C_{${c + 1}}`;
 }
 
 export function describeAddScaledCol(target: number, source: number, scalar: number): string {
-	const s = formatNum(scalar);
-	const sign = scalar >= 0 ? `+ ${s}` : `− ${formatNum(Math.abs(scalar))}`;
-	return `C${target + 1} ← C${target + 1} ${sign} · C${source + 1}`;
+	const s = formatNumLatex(scalar);
+	const sign = scalar >= 0 ? `+ ${s}` : `- ${formatNumLatex(Math.abs(scalar))}`;
+	return `C_{${target + 1}} \\rightarrow C_{${target + 1}} ${sign} \\cdot C_{${source + 1}}`;
 }
