@@ -334,7 +334,7 @@
 						<td class="min-w-12 px-2 py-1">
 							<div
 								class="flex min-w-10 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-center font-mathnum text-slate-700 transition-colors {isDragging
-									? ''
+									? 'bg-violet-50'
 									: preview
 										? !preview.to.equals(preview.from)
 											? 'bg-violet-50'
