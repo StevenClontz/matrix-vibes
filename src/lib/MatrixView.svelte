@@ -398,11 +398,13 @@
 	submitDisabled: boolean = false
 )}
 	<div class="mt-3 flex flex-col gap-2 border-t border-slate-200 pt-3 text-sm text-slate-600">
-		<div class="text-slate-700 flex flex-wrap items-center gap-3">
+		<div class="text-slate-700 flex flex-wrap justify-center items-center gap-3">
 			<span>{@html descriptionHtml}</span>
+		</div>
+		<div class="text-slate-700 flex items-center justify-center">
 			{@render controls()}
 		</div>
-		<div class="flex flex-wrap items-center gap-3">
+		<div class="flex flex-wrap items-center justify-center gap-3">
 			<button
 				onclick={onSubmit}
 				disabled={submitDisabled}
@@ -439,17 +441,21 @@
 {/snippet}
 
 {#snippet dropControls()}
-	<label class="flex items-center gap-1.5">
-		<input type="radio" name="dropMode" value="swap" bind:group={dropMode} />
-		Swap
-	</label>
+	<div class="flex gap-3 items-center justify-center my-2">
+	{#if dropMode === 'combine'}
+		{@render scaleControls()}
+	{/if}
+	</div>
+	<div class="flex gap-3 items-center justify-center my-2">
 	<label class="flex items-center gap-1.5">
 		<input type="radio" name="dropMode" value="combine" bind:group={dropMode} />
 		Combine
 	</label>
-	{#if dropMode === 'combine'}
-		{@render scaleControls()}
-	{/if}
+	<label class="flex items-center gap-1.5">
+		<input type="radio" name="dropMode" value="swap" bind:group={dropMode} />
+		Swap
+	</label>
+	</div>
 {/snippet}
 
 {#if ghostValues && !isOverDragTarget}

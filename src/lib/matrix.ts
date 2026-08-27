@@ -83,10 +83,10 @@ export function describeSwapCols(c1: number, c2: number): string {
 }
 
 export function describeScaleCol(c: number, scalar: Fraction): string {
-	return `C_{${c + 1}} \\rightarrow ${scalar.toLatex()} \\cdot C_{${c + 1}}`;
+	return `C_{${c + 1}} \\rightarrow ${scalar.toLatex()} C_{${c + 1}}`;
 }
 
 export function describeAddScaledCol(target: number, source: number, scalar: Fraction): string {
 	const sign = scalar.compare(0) < 0 ? `- ${scalar.abs().toLatex()}` : `+ ${scalar.toLatex()}`;
-	return `C_{${target + 1}} \\rightarrow C_{${target + 1}} ${sign} \\cdot C_{${source + 1}}`;
+	return `C_{${target + 1}} \\rightarrow C_{${target + 1}} ${sign} C_{${source + 1}}`;
 }
