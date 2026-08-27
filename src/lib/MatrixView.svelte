@@ -330,7 +330,7 @@
 							selectedRow === i || selectedCol === j
 								? { from: value, to: value.mul(scaleFactor) }
 								: null}
-						{@const preview = dragPreview ?? scalePreview ?? computeDropPreview(i, j)}
+						{@const preview = isAnyDragActive ? dragPreview : (scalePreview ?? computeDropPreview(i, j))}
 						<td class="min-w-12 px-2 py-1">
 							<div
 								class="flex min-w-10 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-center font-mathnum text-slate-700 transition-colors {isDragging
