@@ -322,9 +322,9 @@
 						{@const isDragging = draggedRow === i || draggedCol === j}
 						{@const dragPreview =
 							draggedRow !== null && dragTargetRow === i && draggedRow !== i
-								? { from: value, to: matrix[draggedRow][j] }
+								? { from: value, to: value.add(matrix[draggedRow][j]) }
 								: draggedCol !== null && dragTargetCol === j && draggedCol !== j
-									? { from: value, to: matrix[i][draggedCol] }
+									? { from: value, to: value.add(matrix[i][draggedCol]) }
 									: null}
 						{@const scalePreview =
 							selectedRow === i || selectedCol === j
