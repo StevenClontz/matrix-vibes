@@ -262,7 +262,7 @@
 {/snippet}
 
 <div class="inline-block overflow-auto rounded-lg border border-slate-300 bg-white p-4 shadow-sm select-none">
-	<table class="border-collapse">
+	<table class="border-collapse mx-auto">
 		<thead>
 			<tr>
 				<th class="w-10"></th>
