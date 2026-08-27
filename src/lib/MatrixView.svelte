@@ -397,11 +397,11 @@
 	controls: Snippet,
 	submitDisabled: boolean = false
 )}
-	<div class="mt-3 flex flex-col gap-2 border-t border-slate-200 pt-3 text-sm text-slate-600">
+	<div class="mt-3 flex flex-col border-t border-slate-200 pt-3 text-sm text-slate-600">
 		<div class="text-slate-700 flex flex-wrap justify-center items-center gap-3">
 			<span>{@html descriptionHtml}</span>
 		</div>
-		<div class="text-slate-700 flex items-center justify-center">
+		<div class="text-slate-700">
 			{@render controls()}
 		</div>
 		<div class="flex flex-wrap items-center justify-center gap-3">
@@ -423,6 +423,7 @@
 {/snippet}
 
 {#snippet scaleControls()}
+	<div class="flex items-center justify-center my-2">
 	<label>Scaling factor:
 	<input
 		type="text"
@@ -438,10 +439,11 @@
 			? 'border-slate-300 text-slate-700 focus:border-violet-400'
 			: 'border-red-400 text-red-600 focus:border-red-500'}"
 	/></label>
+	</div>
 {/snippet}
 
 {#snippet dropControls()}
-	<div class="flex gap-3 items-center justify-center my-2">
+	<div class="mx-auto">
 	{#if dropMode === 'combine'}
 		{@render scaleControls()}
 	{/if}
