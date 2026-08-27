@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import katex from 'katex';
+	import Fraction from 'fraction.js';
 	import type { Matrix } from './matrix';
 	import {
-		formatNum,
 		scaleRow,
 		scaleCol,
 		swapRows,
@@ -18,6 +18,14 @@
 		describeAddScaledCol
 	} from './matrix';
 
+	function parseRational(text: string): Fraction | null {
+		try {
+			return new Fraction(text.trim());
+		} catch {
+			return null;
+		}
+	}
+
 	let { matrix = $bindable() }: { matrix: Matrix } = $props();
 
 	let selectedRow = $state<number | null>(null);
@@ -26,7 +34,9 @@
 	let dropAction = $state<{ kind: 'row' | 'col'; source: number; target: number } | null>(null);
 	let dropMode = $state<'swap' | 'combine'>('combine');
 
-	let scaleFactor = $state(1);
+	let scaleFactor = $state<Fraction>(new Fraction(1));
+	let scaleFactorText = $state('1');
+	let scaleFactorValid = $derived(parseRational(scaleFactorText) !== null);
 
 	let hoveredRow = $state<number | null>(null);
 	let hoveredCol = $state<number | null>(null);
@@ -39,7 +49,7 @@
 	let dragTargetRow = $state<number | null>(null);
 	let dragTargetCol = $state<number | null>(null);
 
-	let ghostValues = $state<number[] | null>(null);
+	let ghostValues = $state<Fraction[] | null>(null);
 	let ghostOrientation = $state<'row' | 'col' | null>(null);
 	let ghostX = $state(0);
 	let ghostY = $state(0);
@@ -104,13 +114,15 @@
 			selectedRow = null;
 			selectedCol = null;
 			dropMode = 'combine';
-			scaleFactor = 1;
+			scaleFactor = new Fraction(1);
+			scaleFactorText = '1';
 			dropAction = { kind: 'row', source: draggedRow, target: dragTargetRow };
 		} else if (draggedCol !== null && dragTargetCol !== null && dragTargetCol !== draggedCol) {
 			selectedRow = null;
 			selectedCol = null;
 			dropMode = 'combine';
-			scaleFactor = 1;
+			scaleFactor = new Fraction(1);
+			scaleFactorText = '1';
 			dropAction = { kind: 'col', source: draggedCol, target: dragTargetCol };
 		} else if (draggedRow === null && draggedCol === null && pendingDrag) {
 			// Mouse never moved past the threshold: treat it as a click, not a drag.
@@ -142,7 +154,8 @@
 		} else {
 			selectedRow = i;
 			selectedCol = null;
-			scaleFactor = 1;
+			scaleFactor = new Fraction(1);
+			scaleFactorText = '1';
 			dropAction = null;
 		}
 	}
@@ -153,30 +166,35 @@
 		} else {
 			selectedCol = j;
 			selectedRow = null;
-			scaleFactor = 1;
+			scaleFactor = new Fraction(1);
+			scaleFactorText = '1';
 			dropAction = null;
 		}
 	}
 
 	function applyScale() {
+		if (!scaleFactorValid) return;
 		if (selectedRow !== null) {
 			matrix = scaleRow(matrix, selectedRow, scaleFactor);
 		} else if (selectedCol !== null) {
 			matrix = scaleCol(matrix, selectedCol, scaleFactor);
 		}
-		scaleFactor = 1;
+		scaleFactor = new Fraction(1);
+		scaleFactorText = '1';
 		selectedRow = null;
 		selectedCol = null;
 	}
 
 	function cancelScale() {
-		scaleFactor = 1;
+		scaleFactor = new Fraction(1);
+		scaleFactorText = '1';
 		selectedRow = null;
 		selectedCol = null;
 	}
 
 	function applyDropAction() {
 		if (!dropAction) return;
+		if (dropMode === 'combine' && !scaleFactorValid) return;
 		const { kind, source, target } = dropAction;
 		if (kind === 'row') {
 			matrix =
@@ -191,22 +209,25 @@
 		}
 		dropAction = null;
 		dropMode = 'combine';
-		scaleFactor = 1;
+		scaleFactor = new Fraction(1);
+		scaleFactorText = '1';
 	}
 
 	function cancelDropAction() {
 		dropAction = null;
 		dropMode = 'combine';
-		scaleFactor = 1;
+		scaleFactor = new Fraction(1);
+		scaleFactorText = '1';
 	}
 
-	function computeDropPreview(i: number, j: number): { from: number; to: number } | null {
+	function computeDropPreview(i: number, j: number): { from: Fraction; to: Fraction } | null {
 		if (!dropAction) return null;
 		const { kind, source, target } = dropAction;
 		if (kind === 'row') {
 			if (i === target) {
 				const from = matrix[target][j];
-				const to = dropMode === 'swap' ? matrix[source][j] : from + scaleFactor * matrix[source][j];
+				const to =
+					dropMode === 'swap' ? matrix[source][j] : from.add(scaleFactor.mul(matrix[source][j]));
 				return { from, to };
 			}
 			if (i === source) {
@@ -218,7 +239,8 @@
 		}
 		if (j === target) {
 			const from = matrix[i][target];
-			const to = dropMode === 'swap' ? matrix[i][source] : from + scaleFactor * matrix[i][source];
+			const to =
+				dropMode === 'swap' ? matrix[i][source] : from.add(scaleFactor.mul(matrix[i][source]));
 			return { from, to };
 		}
 		if (j === source) {
@@ -319,7 +341,7 @@
 									: null}
 						{@const scalePreview =
 							selectedRow === i || selectedCol === j
-								? { from: value, to: value * scaleFactor }
+								? { from: value, to: value.mul(scaleFactor) }
 								: null}
 						{@const preview = dragPreview ?? scalePreview ?? computeDropPreview(i, j)}
 						<td class="min-w-12 px-2 py-1" data-col={j}>
@@ -327,7 +349,7 @@
 								class="flex min-w-10 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-center font-mathnum text-slate-700 transition-colors {isDragging
 									? ''
 									: preview
-										? preview.to !== preview.from
+										? !preview.to.equals(preview.from)
 											? 'bg-violet-50'
 											: 'bg-slate-100'
 										: isHovered
@@ -335,13 +357,13 @@
 											: ''}"
 							>
 								{#if preview}
-									<span class="text-slate-400">{formatNum(preview.from)}</span>
-									{#if preview.to !== preview.from}
+									<span class="text-slate-400">{preview.from.toFraction()}</span>
+									{#if !preview.to.equals(preview.from)}
 										<span class="text-slate-400">→</span>
-										<span class="font-semibold text-violet-600">{formatNum(preview.to)}</span>
+										<span class="font-semibold text-violet-600">{preview.to.toFraction()}</span>
 									{/if}
 								{:else}
-									{formatNum(value)}
+									{value.toFraction()}
 								{/if}
 							</div>
 						</td>
@@ -357,7 +379,7 @@
 				? describeScaleRow(selectedRow, scaleFactor)
 				: describeScaleCol(selectedCol!, scaleFactor)}
 		{@const descriptionHtml = katex.renderToString(latex, { throwOnError: false })}
-		{@render controlPanel(descriptionHtml, applyScale, cancelScale, scaleControls)}
+		{@render controlPanel(descriptionHtml, applyScale, cancelScale, scaleControls, !scaleFactorValid)}
 	{/if}
 
 	{#if dropAction}
@@ -371,7 +393,13 @@
 					? describeAddScaledRow(target, source, scaleFactor)
 					: describeAddScaledCol(target, source, scaleFactor)}
 		{@const descriptionHtml = katex.renderToString(latex, { throwOnError: false })}
-		{@render controlPanel(descriptionHtml, applyDropAction, cancelDropAction, dropControls)}
+		{@render controlPanel(
+			descriptionHtml,
+			applyDropAction,
+			cancelDropAction,
+			dropControls,
+			dropMode === 'combine' && !scaleFactorValid
+		)}
 	{/if}
 </div>
 
@@ -379,7 +407,8 @@
 	descriptionHtml: string,
 	onSubmit: () => void,
 	onCancel: () => void,
-	controls: Snippet
+	controls: Snippet,
+	submitDisabled: boolean = false
 )}
 	<div class="mt-3 flex flex-col gap-2 border-t border-slate-200 pt-3 text-sm text-slate-600">
 		<div class="text-slate-700 flex flex-wrap items-center gap-3">
@@ -389,7 +418,8 @@
 		<div class="flex flex-wrap items-center gap-3">
 			<button
 				onclick={onSubmit}
-				class="rounded-md bg-violet-600 px-3 py-1 font-medium text-white transition-colors hover:bg-violet-700"
+				disabled={submitDisabled}
+				class="rounded-md bg-violet-600 px-3 py-1 font-medium text-white transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
 			>
 				Submit
 			</button>
@@ -406,10 +436,18 @@
 {#snippet scaleControls()}
 	<label>Scaling factor:
 	<input
-		type="number"
-		step="any"
-		bind:value={scaleFactor}
-		class="w-20 rounded-md border border-slate-300 px-2 py-1 font-mathnum text-slate-700 focus:border-violet-400 focus:outline-none"
+		type="text"
+		inputmode="text"
+		value={scaleFactorText}
+		oninput={(e) => {
+			scaleFactorText = e.currentTarget.value;
+			const parsed = parseRational(scaleFactorText);
+			if (parsed !== null) scaleFactor = parsed;
+		}}
+		aria-invalid={!scaleFactorValid}
+		class="w-20 rounded-md border px-2 py-1 font-mathnum focus:outline-none {scaleFactorValid
+			? 'border-slate-300 text-slate-700 focus:border-violet-400'
+			: 'border-red-400 text-red-600 focus:border-red-500'}"
 	/></label>
 {/snippet}
 
@@ -435,7 +473,7 @@
 		style="left: {ghostX}px; top: {ghostY}px; transform: translate(-50%, -50%);"
 	>
 		{#each ghostValues as v}
-			<span class="rounded-md px-3 py-1.5 font-mathnum text-violet-700">{formatNum(v)}</span>
+			<span class="rounded-md px-3 py-1.5 font-mathnum text-violet-700">{v.toFraction()}</span>
 		{/each}
 	</div>
 {/if}
