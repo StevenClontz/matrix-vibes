@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import katex from 'katex';
 	import Fraction from 'fraction.js';
+	import interact from 'interactjs';
 	import type { Matrix } from './matrix';
 	import {
 		scaleRow,
@@ -61,91 +62,76 @@
 			(ghostOrientation === 'col' && dragTargetCol !== null && dragTargetCol !== draggedCol)
 	);
 
-	// Plain pointer-based drag (mousedown/mousemove/mouseup) instead of the native HTML5
-	// draggable/dragstart API: native drag hands cursor rendering to the browser/OS, which is
-	// unreliable across environments (e.g. shows a "no-drop" cursor outside our control). Doing
-	// our own tracking means the cursor is just CSS, fully within our control the whole time.
-	const DRAG_THRESHOLD = 4;
-	let pendingDrag: { kind: 'row' | 'col'; index: number; startX: number; startY: number } | null =
-		null;
+	function dragHandle(node: HTMLElement, params: { kind: 'row' | 'col'; index: number }) {
+		let current = params;
 
-	function updateDragTarget(x: number, y: number) {
-		const el = document.elementFromPoint(x, y);
-		if (draggedRow !== null) {
-			const rowEl = el?.closest<HTMLElement>('[data-row]') ?? null;
-			dragTargetRow = rowEl ? Number(rowEl.dataset.row) : null;
-		}
-		if (draggedCol !== null) {
-			const colEl = el?.closest<HTMLElement>('[data-col]') ?? null;
-			dragTargetCol = colEl ? Number(colEl.dataset.col) : null;
-		}
-	}
+		const interactable = interact(node)
+			.draggable({
+				listeners: {
+					start() {
+						if (current.kind === 'row') {
+							draggedRow = current.index;
+							ghostValues = matrix[current.index];
+							ghostOrientation = 'row';
+						} else {
+							draggedCol = current.index;
+							ghostValues = matrix.map((row) => row[current.index]);
+							ghostOrientation = 'col';
+						}
+						document.body.style.cursor = 'grabbing';
+					},
+					move(event) {
+						ghostX = event.clientX;
+						ghostY = event.clientY;
+					},
+					end() {
+						draggedRow = null;
+						draggedCol = null;
+						dragTargetRow = null;
+						dragTargetCol = null;
+						ghostValues = null;
+						ghostOrientation = null;
+						document.body.style.cursor = '';
+					}
+				}
+			})
+			.dropzone({
+				accept: current.kind === 'row' ? '[data-row-handle]' : '[data-col-handle]',
+				overlap: 'pointer',
+				ondragenter() {
+					if (current.kind === 'row') dragTargetRow = current.index;
+					else dragTargetCol = current.index;
+				},
+				ondragleave() {
+					if (current.kind === 'row' && dragTargetRow === current.index) dragTargetRow = null;
+					if (current.kind === 'col' && dragTargetCol === current.index) dragTargetCol = null;
+				},
+				ondrop(event) {
+					const attr = current.kind === 'row' ? 'rowHandle' : 'colHandle';
+					const source = Number((event.relatedTarget as HTMLElement).dataset[attr]);
+					const target = current.index;
+					if (source === target) return;
+					selectedRow = null;
+					selectedCol = null;
+					dropMode = 'combine';
+					scaleFactor = new Fraction(1);
+					scaleFactorText = '1';
+					dropAction = { kind: current.kind, source, target };
+				}
+			})
+			.on('tap', () => {
+				if (current.kind === 'row') selectRow(current.index);
+				else selectCol(current.index);
+			});
 
-	function onPointerMove(e: MouseEvent) {
-		if (!pendingDrag) return;
-
-		if (draggedRow === null && draggedCol === null) {
-			const dx = e.clientX - pendingDrag.startX;
-			const dy = e.clientY - pendingDrag.startY;
-			if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
-
-			if (pendingDrag.kind === 'row') {
-				draggedRow = pendingDrag.index;
-				ghostValues = matrix[pendingDrag.index];
-				ghostOrientation = 'row';
-			} else {
-				draggedCol = pendingDrag.index;
-				ghostValues = matrix.map((row) => row[pendingDrag!.index]);
-				ghostOrientation = 'col';
+		return {
+			update(newParams: { kind: 'row' | 'col'; index: number }) {
+				current = newParams;
+			},
+			destroy() {
+				interactable.unset();
 			}
-			document.body.style.cursor = 'grabbing';
-		}
-
-		ghostX = e.clientX;
-		ghostY = e.clientY;
-		updateDragTarget(e.clientX, e.clientY);
-	}
-
-	function onPointerUp() {
-		window.removeEventListener('mousemove', onPointerMove);
-		window.removeEventListener('mouseup', onPointerUp);
-
-		if (draggedRow !== null && dragTargetRow !== null && dragTargetRow !== draggedRow) {
-			selectedRow = null;
-			selectedCol = null;
-			dropMode = 'combine';
-			scaleFactor = new Fraction(1);
-			scaleFactorText = '1';
-			dropAction = { kind: 'row', source: draggedRow, target: dragTargetRow };
-		} else if (draggedCol !== null && dragTargetCol !== null && dragTargetCol !== draggedCol) {
-			selectedRow = null;
-			selectedCol = null;
-			dropMode = 'combine';
-			scaleFactor = new Fraction(1);
-			scaleFactorText = '1';
-			dropAction = { kind: 'col', source: draggedCol, target: dragTargetCol };
-		} else if (draggedRow === null && draggedCol === null && pendingDrag) {
-			// Mouse never moved past the threshold: treat it as a click, not a drag.
-			if (pendingDrag.kind === 'row') selectRow(pendingDrag.index);
-			else selectCol(pendingDrag.index);
-		}
-
-		pendingDrag = null;
-		draggedRow = null;
-		draggedCol = null;
-		dragTargetRow = null;
-		dragTargetCol = null;
-		ghostValues = null;
-		ghostOrientation = null;
-		document.body.style.cursor = '';
-	}
-
-	function onHandlePointerDown(kind: 'row' | 'col', index: number, e: MouseEvent) {
-		if (e.button !== 0) return;
-		e.preventDefault(); // avoid native text-selection drag while we track the mouse ourselves
-		pendingDrag = { kind, index, startX: e.clientX, startY: e.clientY };
-		window.addEventListener('mousemove', onPointerMove);
-		window.addEventListener('mouseup', onPointerUp);
+		};
 	}
 
 	function selectRow(i: number) {
@@ -284,11 +270,12 @@
 					<th
 						class="{isAnyDragActive
 							? 'cursor-grabbing'
-							: 'cursor-grab'} select-none rounded-md p-2 text-center align-middle transition-colors {selectedCol ===
+							: 'cursor-grab'} touch-none select-none rounded-md p-2 text-center align-middle transition-colors {selectedCol ===
 						j
 							? 'text-violet-600'
 							: 'text-slate-200 hover:text-slate-400'}"
-						data-col={j}
+						data-col-handle={j}
+						use:dragHandle={{ kind: 'col', index: j }}
 						tabindex="0"
 						aria-label={`Column ${j + 1}`}
 						title={`Column ${j + 1}`}
@@ -297,7 +284,6 @@
 						onmouseleave={() => (hoveredCol = null)}
 						onfocus={() => (hoveredCol = j)}
 						onblur={() => (hoveredCol = null)}
-						onmousedown={(e) => onHandlePointerDown('col', j, e)}
 					>
 						<span class="flex h-4 items-center justify-center">
 							{@render handleIcon()}
@@ -308,14 +294,16 @@
 		</thead>
 		<tbody>
 			{#each matrix as row, i (i)}
-				<tr data-row={i}>
+				<tr>
 					<th
 						class="{isAnyDragActive
 							? 'cursor-grabbing'
-							: 'cursor-grab'} select-none rounded-md p-2 text-center align-middle transition-colors {selectedRow ===
+							: 'cursor-grab'} touch-none select-none rounded-md p-2 text-center align-middle transition-colors {selectedRow ===
 						i
 							? 'text-violet-600'
 							: 'text-slate-200 hover:text-slate-400'}"
+						data-row-handle={i}
+						use:dragHandle={{ kind: 'row', index: i }}
 						tabindex="0"
 						aria-label={`Row ${i + 1}`}
 						title={`Row ${i + 1}`}
@@ -324,7 +312,6 @@
 						onmouseleave={() => (hoveredRow = null)}
 						onfocus={() => (hoveredRow = i)}
 						onblur={() => (hoveredRow = null)}
-						onmousedown={(e) => onHandlePointerDown('row', i, e)}
 					>
 						<span class="flex h-4 items-center justify-center">
 							{@render handleIcon()}
@@ -344,7 +331,7 @@
 								? { from: value, to: value.mul(scaleFactor) }
 								: null}
 						{@const preview = dragPreview ?? scalePreview ?? computeDropPreview(i, j)}
-						<td class="min-w-12 px-2 py-1" data-col={j}>
+						<td class="min-w-12 px-2 py-1">
 							<div
 								class="flex min-w-10 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-center font-mathnum text-slate-700 transition-colors {isDragging
 									? ''
