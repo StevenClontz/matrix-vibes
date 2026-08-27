@@ -457,7 +457,9 @@
 		class="pointer-events-none fixed z-50 flex {ghostOrientation === 'row'
 			? 'flex-row'
 			: 'flex-col'} items-center gap-1 rounded-lg border border-violet-200 bg-white/90 p-2 opacity-60 shadow-lg"
-		style="left: {ghostX}px; top: {ghostY}px; transform: translate(-50%, -50%);"
+		style="left: {ghostX}px; top: {ghostY}px; transform: {ghostOrientation === 'row'
+			? 'translate(12px, -50%)'
+			: 'translate(-50%, 12px)'};"
 	>
 		{#each ghostValues as v}
 			<span class="rounded-md px-3 py-1.5 font-mathnum text-violet-700">{v.toFraction()}</span>
