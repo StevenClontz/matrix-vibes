@@ -12,6 +12,6 @@
 </script>
 
 <main class="flex min-h-screen flex-col items-center gap-6 bg-slate-50 p-10">
-	<h1 class="text-2xl font-bold text-slate-800">Matrix Vibes</h1>
+	<h1 class="text-2xl font-bold text-slate-800">Row and Column Operations Calculator</h1>
 	<MatrixView bind:matrix />
 </main>
