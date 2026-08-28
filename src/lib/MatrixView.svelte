@@ -114,8 +114,8 @@
 					selectedRow = null;
 					selectedCol = null;
 					dropMode = 'combine';
-					scaleFactor = new Fraction(1);
-					scaleFactorText = '1';
+					scaleFactor = new Fraction(0);
+					scaleFactorText = '0';
 					dropAction = { kind: current.kind, source, target };
 				}
 			})
@@ -195,18 +195,21 @@
 		}
 		dropAction = null;
 		dropMode = 'combine';
-		scaleFactor = new Fraction(1);
-		scaleFactorText = '1';
+		scaleFactor = new Fraction(0);
+		scaleFactorText = '0';
 	}
 
 	function cancelDropAction() {
 		dropAction = null;
 		dropMode = 'combine';
-		scaleFactor = new Fraction(1);
-		scaleFactorText = '1';
+		scaleFactor = new Fraction(0);
+		scaleFactorText = '0';
 	}
 
-	function computeDropPreview(i: number, j: number): { from: Fraction; to: Fraction } | null {
+	function computeDropPreview(
+		i: number,
+		j: number
+	): { from: Fraction; to: Fraction; showArrow: boolean } | null {
 		if (!dropAction) return null;
 		const { kind, source, target } = dropAction;
 		if (kind === 'row') {
@@ -214,12 +217,12 @@
 				const from = matrix[target][j];
 				const to =
 					dropMode === 'swap' ? matrix[source][j] : from.add(scaleFactor.mul(matrix[source][j]));
-				return { from, to };
+				return { from, to, showArrow: true };
 			}
 			if (i === source) {
 				const from = matrix[source][j];
 				const to = dropMode === 'swap' ? matrix[target][j] : from;
-				return { from, to };
+				return { from, to, showArrow: dropMode === 'swap' };
 			}
 			return null;
 		}
@@ -227,12 +230,12 @@
 			const from = matrix[i][target];
 			const to =
 				dropMode === 'swap' ? matrix[i][source] : from.add(scaleFactor.mul(matrix[i][source]));
-			return { from, to };
+			return { from, to, showArrow: true };
 		}
 		if (j === source) {
 			const from = matrix[i][source];
 			const to = dropMode === 'swap' ? matrix[i][target] : from;
-			return { from, to };
+			return { from, to, showArrow: dropMode === 'swap' };
 		}
 		return null;
 	}
@@ -268,9 +271,7 @@
 				<th class="w-10"></th>
 				{#each matrix[0] ?? [] as _, j (j)}
 					<th
-						class="{isAnyDragActive
-							? 'cursor-grabbing'
-							: 'cursor-grab'} touch-none select-none rounded-md p-2 text-center align-middle transition-colors {selectedCol ===
+						class="touch-none select-none rounded-md p-2 text-center align-middle transition-colors {selectedCol ===
 						j
 							? 'text-violet-600'
 							: 'text-slate-200 hover:text-slate-400'}"
@@ -296,9 +297,7 @@
 			{#each matrix as row, i (i)}
 				<tr>
 					<th
-						class="{isAnyDragActive
-							? 'cursor-grabbing'
-							: 'cursor-grab'} touch-none select-none rounded-md p-2 text-center align-middle transition-colors {selectedRow ===
+						class="touch-none select-none rounded-md p-2 text-center align-middle transition-colors {selectedRow ===
 						i
 							? 'text-violet-600'
 							: 'text-slate-200 hover:text-slate-400'}"
@@ -322,13 +321,13 @@
 						{@const isDragging = draggedRow === i || draggedCol === j}
 						{@const dragPreview =
 							draggedRow !== null && dragTargetRow === i && draggedRow !== i
-								? { from: value, to: value.add(matrix[draggedRow][j]) }
+								? { from: value, to: value.add(matrix[draggedRow][j]), showArrow: true }
 								: draggedCol !== null && dragTargetCol === j && draggedCol !== j
-									? { from: value, to: value.add(matrix[i][draggedCol]) }
+									? { from: value, to: value.add(matrix[i][draggedCol]), showArrow: true }
 									: null}
 						{@const scalePreview =
 							selectedRow === i || selectedCol === j
-								? { from: value, to: value.mul(scaleFactor) }
+								? { from: value, to: value.mul(scaleFactor), showArrow: true }
 								: null}
 						{@const preview = isAnyDragActive ? dragPreview : (scalePreview ?? computeDropPreview(i, j))}
 						<td class="min-w-12 px-2 py-1">
@@ -345,7 +344,7 @@
 							>
 								{#if preview}
 									<span class="text-slate-400">{preview.from.toFraction()}</span>
-									{#if !preview.to.equals(preview.from)}
+									{#if preview.showArrow}
 										<span class="text-slate-400">→</span>
 										<span class="font-semibold text-violet-600">{preview.to.toFraction()}</span>
 									{/if}
