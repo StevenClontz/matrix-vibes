@@ -270,6 +270,14 @@
 	</svg>
 {/snippet}
 
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key !== 'Escape') return;
+		if (selectedRow !== null || selectedCol !== null) cancelScale();
+		else if (dropAction) cancelDropAction();
+	}}
+/>
+
 <div class="inline-block overflow-auto rounded-lg border border-slate-300 bg-white p-4 shadow-sm select-none">
 	<table class="border-collapse mx-auto">
 		<thead>
