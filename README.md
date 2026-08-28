@@ -39,4 +39,16 @@ npm run build
 
 You can preview the production build with `npm run preview`.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+## Deploying
+
+This app deploys to [Cloudflare Workers](https://developers.cloudflare.com/workers/) via [`@sveltejs/adapter-cloudflare`](https://svelte.dev/docs/kit/adapter-cloudflare) and [Wrangler](https://developers.cloudflare.com/workers/wrangler/).
+
+Pushes to `main` deploy automatically via the [`deploy` GitHub Actions workflow](.github/workflows/deploy.yml), which requires a `CLOUDFLARE_API_TOKEN` repo secret (a Cloudflare API token scoped to "Edit Cloudflare Workers").
+
+To deploy manually:
+
+```sh
+npm run deploy
+```
+
+This builds the app and runs `wrangler deploy`. You'll need to be logged in via `npx wrangler login` first.
