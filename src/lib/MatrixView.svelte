@@ -326,12 +326,10 @@
 					{#each row as value, j (j)}
 						{@const isHovered = !isAnyDragActive && (hoveredRow === i || hoveredCol === j)}
 						{@const isDragging = draggedRow === i || draggedCol === j}
-						{@const dragPreview =
-							draggedRow !== null && dragTargetRow === i && draggedRow !== i
-								? { from: value, to: value.add(matrix[draggedRow][j]), showArrow: true }
-								: draggedCol !== null && dragTargetCol === j && draggedCol !== j
-									? { from: value, to: value.add(matrix[i][draggedCol]), showArrow: true }
-									: null}
+						{@const isDragTarget =
+							(draggedRow !== null && dragTargetRow === i && draggedRow !== i) ||
+							(draggedCol !== null && dragTargetCol === j && draggedCol !== j)}
+						{@const dragPreview = isDragTarget ? { from: value, to: value, showArrow: true } : null}
 						{@const scalePreview =
 							selectedRow === i || selectedCol === j
 								? { from: value, to: value.mul(scaleFactor), showArrow: true }
