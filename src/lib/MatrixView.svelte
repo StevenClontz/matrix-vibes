@@ -38,6 +38,11 @@
 	let scaleFactor = $state<Fraction>(new Fraction(1));
 	let scaleFactorText = $state('1');
 	let scaleFactorValid = $derived(parseRational(scaleFactorText) !== null);
+	let scaleFactorSlider = $derived.by(() => {
+		if (!scaleFactorValid) return 0;
+		const n = Math.round(scaleFactor.valueOf());
+		return Math.max(-10, Math.min(10, n));
+	});
 
 	let hoveredRow = $state<number | null>(null);
 	let hoveredCol = $state<number | null>(null);
@@ -422,7 +427,7 @@
 {/snippet}
 
 {#snippet scaleControls()}
-	<div class="flex items-center justify-center my-2">
+	<div class="flex items-center justify-center gap-3 my-2">
 	<label>Scaling factor:
 	<input
 		type="text"
@@ -438,6 +443,22 @@
 			? 'border-slate-300 text-slate-700 focus:border-violet-400'
 			: 'border-red-400 text-red-600 focus:border-red-500'}"
 	/></label>
+	</div>
+	<div class="flex items-center justify-center gap-3 my-2">
+		<input
+			type="range"
+			min="-10"
+			max="10"
+			step="1"
+			value={scaleFactorSlider}
+			oninput={(e) => {
+				const n = Number(e.currentTarget.value);
+				scaleFactor = new Fraction(n);
+				scaleFactorText = String(n);
+			}}
+			aria-label="Scaling factor slider"
+			class="w-32 accent-violet-600"
+		/>
 	</div>
 {/snippet}
 
