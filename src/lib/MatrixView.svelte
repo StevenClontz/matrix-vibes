@@ -16,16 +16,9 @@
 		describeSwapRows,
 		describeSwapCols,
 		describeAddScaledRow,
-		describeAddScaledCol
+		describeAddScaledCol,
+		parseRational
 	} from './matrix';
-
-	function parseRational(text: string): Fraction | null {
-		try {
-			return new Fraction(text.trim());
-		} catch {
-			return null;
-		}
-	}
 
 	let { matrix = $bindable() }: { matrix: Matrix } = $props();
 

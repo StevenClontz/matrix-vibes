@@ -21,6 +21,14 @@ export function cloneMatrix(m: Matrix): Matrix {
 	return m.map((row) => [...row]);
 }
 
+export function parseRational(text: string): Fraction | null {
+	try {
+		return new Fraction(text.trim());
+	} catch {
+		return null;
+	}
+}
+
 // Row operations
 export function swapRows(m: Matrix, r1: number, r2: number): Matrix {
 	const result = cloneMatrix(m);
