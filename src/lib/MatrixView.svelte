@@ -38,6 +38,7 @@
 	let scaleFactor = $state<Fraction>(new Fraction(1));
 	let scaleFactorText = $state('1');
 	let scaleFactorValid = $derived(parseRational(scaleFactorText) !== null);
+	let scaleFactorIsZero = $derived(scaleFactorValid && scaleFactor.equals(0));
 	let scaleFactorSlider = $derived.by(() => {
 		if (!scaleFactorValid) return 0;
 		const n = Math.round(scaleFactor.valueOf());
@@ -164,7 +165,7 @@
 	}
 
 	function applyScale() {
-		if (!scaleFactorValid) return;
+		if (!scaleFactorValid || scaleFactorIsZero) return;
 		if (selectedRow !== null) {
 			matrix = scaleRow(matrix, selectedRow, scaleFactor);
 		} else if (selectedCol !== null) {
@@ -370,7 +371,13 @@
 				? describeScaleRow(selectedRow, scaleFactor)
 				: describeScaleCol(selectedCol!, scaleFactor)}
 		{@const descriptionHtml = katex.renderToString(latex, { throwOnError: false })}
-		{@render controlPanel(descriptionHtml, applyScale, cancelScale, scaleControls, !scaleFactorValid)}
+		{@render controlPanel(
+			descriptionHtml,
+			applyScale,
+			cancelScale,
+			scaleControlsStrict,
+			!scaleFactorValid || scaleFactorIsZero
+		)}
 	{/if}
 
 	{#if dropAction}
@@ -426,7 +433,8 @@
 	</div>
 {/snippet}
 
-{#snippet scaleControls()}
+{#snippet scaleControls(allowZero: boolean = true)}
+	{@const isInvalid = !scaleFactorValid || (!allowZero && scaleFactorIsZero)}
 	<div class="flex items-center justify-center gap-3 my-2">
 	<label>Scaling factor:
 	<input
@@ -438,10 +446,10 @@
 			const parsed = parseRational(scaleFactorText);
 			if (parsed !== null) scaleFactor = parsed;
 		}}
-		aria-invalid={!scaleFactorValid}
-		class="w-20 rounded-md border px-2 py-1 font-mathnum focus:outline-none {scaleFactorValid
-			? 'border-slate-300 text-slate-700 focus:border-violet-400'
-			: 'border-red-400 text-red-600 focus:border-red-500'}"
+		aria-invalid={isInvalid}
+		class="w-20 rounded-md border px-2 py-1 font-mathnum focus:outline-none {isInvalid
+			? 'border-red-400 text-red-600 focus:border-red-500'
+			: 'border-slate-300 text-slate-700 focus:border-violet-400'}"
 	/></label>
 	</div>
 	<div class="flex items-center justify-center gap-3 my-2">
@@ -460,6 +468,10 @@
 			class="w-32 accent-violet-600"
 		/>
 	</div>
+{/snippet}
+
+{#snippet scaleControlsStrict()}
+	{@render scaleControls(false)}
 {/snippet}
 
 {#snippet dropControls()}
