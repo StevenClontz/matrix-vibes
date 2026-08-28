@@ -447,7 +447,7 @@
 			if (parsed !== null) scaleFactor = parsed;
 		}}
 		aria-invalid={isInvalid}
-		class="w-20 rounded-md border px-2 py-1 font-mathnum focus:outline-none {isInvalid
+		class="min-w-10 [field-sizing:content] text-center rounded-md border px-2 py-1 font-mathnum focus:outline-none {isInvalid
 			? 'border-red-400 text-red-600 focus:border-red-500'
 			: 'border-slate-300 text-slate-700 focus:border-violet-400'}"
 	/></label>
