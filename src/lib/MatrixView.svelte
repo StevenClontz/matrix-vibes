@@ -397,11 +397,11 @@
 	submitDisabled: boolean = false
 )}
 	<div class="mt-3 flex flex-col border-t border-slate-200 pt-3 text-sm text-slate-600">
-		<div class="text-slate-700 flex flex-wrap justify-center items-center gap-3">
-			<span>{@html descriptionHtml}</span>
-		</div>
 		<div class="text-slate-700">
 			{@render controls()}
+		</div>
+		<div class="text-slate-700 my-2 mx-auto">
+			<span>{@html descriptionHtml}</span>
 		</div>
 		<div class="flex flex-wrap items-center justify-center gap-3">
 			<button
@@ -442,11 +442,6 @@
 {/snippet}
 
 {#snippet dropControls()}
-	<div class="mx-auto">
-	{#if dropMode === 'combine'}
-		{@render scaleControls()}
-	{/if}
-	</div>
 	<div class="flex gap-3 items-center justify-center my-2">
 	<label class="flex items-center gap-1.5">
 		<input type="radio" name="dropMode" value="combine" bind:group={dropMode} />
@@ -456,6 +451,11 @@
 		<input type="radio" name="dropMode" value="swap" bind:group={dropMode} />
 		Swap
 	</label>
+	</div>
+	<div class="mx-auto">
+	{#if dropMode === 'combine'}
+		{@render scaleControls()}
+	{/if}
 	</div>
 {/snippet}
 
