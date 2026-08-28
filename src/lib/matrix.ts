@@ -78,12 +78,12 @@ export function describeSwapRows(r1: number, r2: number): string {
 }
 
 export function describeScaleRow(r: number, scalar: Fraction): string {
-	return `R_{${r + 1}} \\rightarrow ${scalar.toLatex()} R_{${r + 1}}`;
+	return `${scalar.toLatex()} R_{${r + 1}} \\rightarrow R_{${r + 1}}`;
 }
 
 export function describeAddScaledRow(target: number, source: number, scalar: Fraction): string {
 	const sign = scalar.compare(0) < 0 ? `- ${scalar.abs().toLatex()}` : `+ ${scalar.toLatex()}`;
-	return `R_{${target + 1}} \\rightarrow R_{${target + 1}} ${sign} R_{${source + 1}}`;
+	return `R_{${target + 1}} ${sign} R_{${source + 1}} \\rightarrow R_{${target + 1}}`;
 }
 
 export function describeSwapCols(c1: number, c2: number): string {
@@ -91,10 +91,10 @@ export function describeSwapCols(c1: number, c2: number): string {
 }
 
 export function describeScaleCol(c: number, scalar: Fraction): string {
-	return `C_{${c + 1}} \\rightarrow ${scalar.toLatex()} C_{${c + 1}}`;
+	return `${scalar.toLatex()} C_{${c + 1}} \\rightarrow C_{${c + 1}}`;
 }
 
 export function describeAddScaledCol(target: number, source: number, scalar: Fraction): string {
 	const sign = scalar.compare(0) < 0 ? `- ${scalar.abs().toLatex()}` : `+ ${scalar.toLatex()}`;
-	return `C_{${target + 1}} \\rightarrow C_{${target + 1}} ${sign} C_{${source + 1}}`;
+	return `C_{${target + 1}} ${sign} C_{${source + 1}} \\rightarrow C_{${target + 1}}`;
 }
