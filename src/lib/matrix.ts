@@ -21,6 +21,23 @@ export function cloneMatrix(m: Matrix): Matrix {
 	return m.map((row) => [...row]);
 }
 
+export function cellKey(i: number, j: number): string {
+	return `${i},${j}`;
+}
+
+/** Renders a matrix as a KaTeX bmatrix, boxing any cells present in `markedCells`. */
+export function matrixToLatex(m: Matrix, markedCells?: Set<string>): string {
+	const rows = m.map((row, i) =>
+		row
+			.map((value, j) => {
+				const latex = value.toLatex();
+				return markedCells?.has(cellKey(i, j)) ? `\\boxed{${latex}}` : latex;
+			})
+			.join(' & ')
+	);
+	return `\\begin{bmatrix} ${rows.join(' \\\\ ')} \\end{bmatrix}`;
+}
+
 export function parseRational(text: string): Fraction | null {
 	try {
 		return new Fraction(text.trim());

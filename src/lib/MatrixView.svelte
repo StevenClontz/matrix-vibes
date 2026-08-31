@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+	import { tick, type Snippet } from 'svelte';
 	import katex from 'katex';
 	import Fraction from 'fraction.js';
 	import interact from 'interactjs';
@@ -17,7 +17,9 @@
 		describeSwapCols,
 		describeAddScaledRow,
 		describeAddScaledCol,
-		parseRational
+		parseRational,
+		cellKey,
+		matrixToLatex
 	} from './matrix';
 
 	let {
@@ -51,9 +53,38 @@
 
 	let markedCells = $state<Set<string>>(new Set());
 
-	function cellKey(i: number, j: number): string {
-		return `${i},${j}`;
-	}
+	let history = $state<Matrix[]>([matrix]);
+
+	$effect(() => {
+		if (matrix !== history[history.length - 1]) {
+			history = [matrix];
+		}
+	});
+
+	const simHtml = katex.renderToString('\\sim', { throwOnError: false });
+	let historyItemsHtml = $derived(
+		history.map((m) => katex.renderToString(matrixToLatex(m, markedCells), { throwOnError: false }))
+	);
+
+	let historyContainer: HTMLDivElement | undefined;
+	let historyPaddingLeft = $state(0);
+	let historyPaddingRight = $state(0);
+
+	$effect(() => {
+		void historyItemsHtml;
+		const container = historyContainer;
+		if (!container) return;
+		const items = container.querySelectorAll<HTMLElement>('.history-item');
+		const firstItem = items[0];
+		const lastItem = items[items.length - 1];
+		const containerWidth = container.clientWidth;
+		historyPaddingLeft = firstItem ? Math.max(0, (containerWidth - firstItem.offsetWidth) / 2) : 0;
+		historyPaddingRight = lastItem ? Math.max(0, (containerWidth - lastItem.offsetWidth) / 2) : 0;
+
+		tick().then(() => {
+			container.scrollTo({ left: container.scrollWidth, behavior: 'smooth' });
+		});
+	});
 
 	function toggleMark(i: number, j: number) {
 		const key = cellKey(i, j);
@@ -190,6 +221,7 @@
 		} else if (selectedCol !== null) {
 			matrix = scaleCol(matrix, selectedCol, scaleFactor);
 		}
+		history = [...history, matrix];
 		scaleFactor = new Fraction(1);
 		scaleFactorText = '1';
 		selectedRow = null;
@@ -218,6 +250,7 @@
 					? swapCols(matrix, source, target)
 					: addScaledCol(matrix, target, source, scaleFactor);
 		}
+		history = [...history, matrix];
 		dropAction = null;
 		dropMode = 'combine';
 		scaleFactor = new Fraction(0);
@@ -437,6 +470,22 @@
 			dropMode === 'combine' && !scaleFactorValid
 		)}
 	{/if}
+</div>
+
+<div class="mt-6 w-full overflow-x-auto" bind:this={historyContainer}>
+	<div
+		class="mx-auto flex w-max items-center gap-3 py-4"
+		style="padding-left: {historyPaddingLeft}px; padding-right: {historyPaddingRight}px;"
+	>
+		{#each historyItemsHtml as itemHtml, idx (idx)}
+			{#if idx > 0}
+				<span class="text-slate-400">{@html simHtml}</span>
+			{/if}
+			<span class="history-item {idx < historyItemsHtml.length - 1 ? 'text-slate-400' : ''}">
+				{@html itemHtml}
+			</span>
+		{/each}
+	</div>
 </div>
 
 {#snippet controlPanel(
