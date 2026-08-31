@@ -3,12 +3,15 @@
 	import StudentInfoModal from '$lib/StudentInfoModal.svelte';
 	import { generateSkillTestMatrix, isRref, pivotCellKeys, type Matrix } from '$lib/matrix';
 
+	const MAX_WRONG_ATTEMPTS = 3;
+
 	let studentName = $state('');
 	let instructorName = $state('');
 	let matrix: Matrix = $state<Matrix>([]);
 	let markedCells: Set<string> = $state(new Set());
 	let started = $state(false);
-	let claimResult = $state<'success' | 'error' | null>(null);
+	let claimResult = $state<'success' | null>(null);
+	let wrongAttempts = $state(0);
 
 	function handleSubmit(name: string, instructor: string) {
 		studentName = name;
@@ -21,7 +24,21 @@
 		const truePivots = pivotCellKeys(matrix);
 		const pivotsMatch =
 			truePivots.size === markedCells.size && [...truePivots].every((k) => markedCells.has(k));
-		claimResult = isRref(matrix) && pivotsMatch ? 'success' : 'error';
+		if (isRref(matrix) && pivotsMatch) {
+			claimResult = 'success';
+			return;
+		}
+		wrongAttempts += 1;
+		if (wrongAttempts >= MAX_WRONG_ATTEMPTS) {
+			alert(
+				"You've used all 3 attempts without a correct answer. You'll need to reattempt the test — the page will now reload with a new matrix."
+			);
+			location.reload();
+			return;
+		}
+		alert(
+			'Not quite — double-check that your matrix satisfies all the properties of RREF, and that every pivot (and no non-pivot) is marked.'
+		);
 	}
 </script>
 
@@ -34,16 +51,11 @@
 			onclick={claimFinished}
 			class="rounded-md bg-violet-600 px-4 py-2 font-medium text-white transition-colors hover:bg-violet-700"
 		>
-			Claim RREF Finished
+			Confirm RREF
 		</button>
 		{#if claimResult === 'success'}
 			<p class="max-w-md text-center text-sm font-medium text-emerald-700">
 				Correct — this matrix is in RREF and every pivot is marked!
-			</p>
-		{:else if claimResult === 'error'}
-			<p class="max-w-md text-center text-sm font-medium text-red-700">
-				Not quite — double-check that your matrix satisfies all the properties of RREF, and that
-				every pivot (and only pivots) is marked, then try again.
 			</p>
 		{/if}
 	{/if}
