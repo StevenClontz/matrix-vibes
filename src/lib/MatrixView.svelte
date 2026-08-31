@@ -67,22 +67,38 @@
 	);
 
 	let historyContainer: HTMLDivElement | undefined;
+	let historyContentRow: HTMLDivElement | undefined;
 	let historyPaddingLeft = $state(0);
 	let historyPaddingRight = $state(0);
 
 	$effect(() => {
 		void historyItemsHtml;
 		const container = historyContainer;
-		if (!container) return;
-		const items = container.querySelectorAll<HTMLElement>('.history-item');
-		const firstItem = items[0];
-		const lastItem = items[items.length - 1];
+		const contentRow = historyContentRow;
+		if (!container || !contentRow) return;
 		const containerWidth = container.clientWidth;
-		historyPaddingLeft = firstItem ? Math.max(0, (containerWidth - firstItem.offsetWidth) / 2) : 0;
-		historyPaddingRight = lastItem ? Math.max(0, (containerWidth - lastItem.offsetWidth) / 2) : 0;
+		const naturalWidth = contentRow.offsetWidth;
+		const items = contentRow.querySelectorAll<HTMLElement>('.history-item');
+		const lastItem = items[items.length - 1];
+		const lastItemWidth = lastItem?.offsetWidth ?? 0;
+		const fitsWithoutScrolling = naturalWidth <= containerWidth;
+
+		if (fitsWithoutScrolling) {
+			// Not enough content to need scrolling — shift it right just far enough
+			// to center the latest matrix, without pushing older ones off-screen.
+			historyPaddingLeft = Math.max(0, containerWidth / 2 - naturalWidth + lastItemWidth / 2);
+			historyPaddingRight = 0;
+		} else {
+			const firstItem = items[0];
+			historyPaddingLeft = firstItem ? Math.max(0, (containerWidth - firstItem.offsetWidth) / 2) : 0;
+			historyPaddingRight = Math.max(0, (containerWidth - lastItemWidth) / 2);
+		}
 
 		tick().then(() => {
-			container.scrollTo({ left: container.scrollWidth, behavior: 'smooth' });
+			container.scrollTo({
+				left: container.scrollWidth,
+				behavior: fitsWithoutScrolling ? 'auto' : 'smooth'
+			});
 		});
 	});
 
@@ -474,17 +490,19 @@
 
 <div class="mt-6 w-full overflow-x-auto" bind:this={historyContainer}>
 	<div
-		class="mx-auto flex w-max items-center gap-3 py-4"
+		class="w-max"
 		style="padding-left: {historyPaddingLeft}px; padding-right: {historyPaddingRight}px;"
 	>
-		{#each historyItemsHtml as itemHtml, idx (idx)}
-			{#if idx > 0}
-				<span class="text-slate-400">{@html simHtml}</span>
-			{/if}
-			<span class="history-item {idx < historyItemsHtml.length - 1 ? 'text-slate-400' : ''}">
-				{@html itemHtml}
-			</span>
-		{/each}
+		<div class="flex items-center gap-3 py-4" bind:this={historyContentRow}>
+			{#each historyItemsHtml as itemHtml, idx (idx)}
+				{#if idx > 0}
+					<span class="text-slate-400">{@html simHtml}</span>
+				{/if}
+				<span class="history-item {idx < historyItemsHtml.length - 1 ? 'text-slate-400' : ''}">
+					{@html itemHtml}
+				</span>
+			{/each}
+		</div>
 	</div>
 </div>
 
