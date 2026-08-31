@@ -63,7 +63,11 @@
 
 	const simHtml = katex.renderToString('\\sim', { throwOnError: false });
 	let historyItemsHtml = $derived(
-		history.map((m) => katex.renderToString(matrixToLatex(m, markedCells), { throwOnError: false }))
+		history.map((m, idx) =>
+			katex.renderToString(matrixToLatex(m, idx === history.length - 1 ? markedCells : undefined), {
+				throwOnError: false
+			})
+		)
 	);
 
 	let historyContainer: HTMLDivElement | undefined;
@@ -346,6 +350,24 @@
 	}}
 />
 
+<div class="w-full overflow-x-auto" bind:this={historyContainer}>
+	<div
+		class="w-max"
+		style="padding-left: {historyPaddingLeft}px; padding-right: {historyPaddingRight}px;"
+	>
+		<div class="flex items-center gap-3 py-4" bind:this={historyContentRow}>
+			{#each historyItemsHtml as itemHtml, idx (idx)}
+				{#if idx > 0}
+					<span class="text-slate-400">{@html simHtml}</span>
+				{/if}
+				<span class="history-item {idx < historyItemsHtml.length - 1 ? 'text-slate-400' : ''}">
+					{@html itemHtml}
+				</span>
+			{/each}
+		</div>
+	</div>
+</div>
+
 <div class="inline-block overflow-auto rounded-lg border border-slate-300 bg-white p-4 shadow-sm select-none">
 	<table class="border-collapse mx-auto">
 		<thead>
@@ -486,24 +508,6 @@
 			dropMode === 'combine' && !scaleFactorValid
 		)}
 	{/if}
-</div>
-
-<div class="mt-6 w-full overflow-x-auto" bind:this={historyContainer}>
-	<div
-		class="w-max"
-		style="padding-left: {historyPaddingLeft}px; padding-right: {historyPaddingRight}px;"
-	>
-		<div class="flex items-center gap-3 py-4" bind:this={historyContentRow}>
-			{#each historyItemsHtml as itemHtml, idx (idx)}
-				{#if idx > 0}
-					<span class="text-slate-400">{@html simHtml}</span>
-				{/if}
-				<span class="history-item {idx < historyItemsHtml.length - 1 ? 'text-slate-400' : ''}">
-					{@html itemHtml}
-				</span>
-			{/each}
-		</div>
-	</div>
 </div>
 
 {#snippet controlPanel(
