@@ -233,6 +233,36 @@ export function describeAddScaledRow(target: number, source: number, scalar: Fra
 	return `R_{${target + 1}} ${sign} R_{${source + 1}} \\rightarrow R_{${target + 1}}`;
 }
 
+const SKILL_TEST_RANDOM_MATRIX_MAX_ABS_VALUE = 9; // matches RANDOM_MATRIX_MAX_ABS_VALUE in NewMatrixModal.svelte
+const SKILL_TEST_ROW_OP_MAX_ABS_SCALAR = 3; // matches ROW_OP_MAX_ABS_SCALAR in NewMatrixModal.svelte
+const SKILL_TEST_MAX_OPS = 20;
+
+function hasZeroCell(m: Matrix): boolean {
+	return m.some((row) => row.some((v) => v.equals(0)));
+}
+
+/**
+ * Generates a random 4x6 or 5x5 matrix for the RREF skill test: starts from a
+ * random RREF matrix of rank 3 or 4, then scrambles it with random row
+ * operations (same restrictions as the main page) until every cell is
+ * nonzero. Retries from a fresh RREF matrix if more than 20 operations are
+ * needed.
+ */
+export function generateSkillTestMatrix(): Matrix {
+	while (true) {
+		const [rows, cols] = Math.random() < 0.5 ? [4, 6] : [5, 5];
+		const rank = Math.random() < 0.5 ? 3 : 4;
+		let matrix = randomRrefMatrix(rows, cols, rank, SKILL_TEST_RANDOM_MATRIX_MAX_ABS_VALUE);
+
+		let ops = 0;
+		while (hasZeroCell(matrix) && ops < SKILL_TEST_MAX_OPS) {
+			matrix = randomRowOperation(matrix, SKILL_TEST_ROW_OP_MAX_ABS_SCALAR);
+			ops++;
+		}
+		if (!hasZeroCell(matrix)) return matrix;
+	}
+}
+
 export function describeSwapCols(c1: number, c2: number): string {
 	return `C_{${c1 + 1}} \\leftrightarrow C_{${c2 + 1}}`;
 }
