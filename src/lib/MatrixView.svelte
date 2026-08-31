@@ -25,11 +25,13 @@
 	let {
 		matrix = $bindable(),
 		markedCells = $bindable(new Set<string>()),
+		steps = $bindable(0),
 		disableRowOps = false,
 		disableColOps = false
 	}: {
 		matrix: Matrix;
 		markedCells?: Set<string>;
+		steps?: number;
 		disableRowOps?: boolean;
 		disableColOps?: boolean;
 	} = $props();
@@ -262,6 +264,7 @@
 			matrix = scaleCol(matrix, selectedCol, scaleFactor);
 		}
 		history = [...history, { matrix, opLatex }];
+		steps += 1;
 		scaleFactor = new Fraction(1);
 		scaleFactorText = '1';
 		selectedRow = null;
@@ -299,6 +302,7 @@
 					: addScaledCol(matrix, target, source, scaleFactor);
 		}
 		history = [...history, { matrix, opLatex }];
+		steps += 1;
 		dropAction = null;
 		dropMode = 'combine';
 		scaleFactor = new Fraction(0);
