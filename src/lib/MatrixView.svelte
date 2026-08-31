@@ -19,7 +19,8 @@
 		describeAddScaledCol,
 		parseRational,
 		cellKey,
-		matrixToLatex
+		matrixToLatex,
+		matricesEqual
 	} from './matrix';
 
 	let {
@@ -258,13 +259,15 @@
 			selectedRow !== null
 				? describeScaleRow(selectedRow, scaleFactor)
 				: describeScaleCol(selectedCol!, scaleFactor);
-		if (selectedRow !== null) {
-			matrix = scaleRow(matrix, selectedRow, scaleFactor);
-		} else if (selectedCol !== null) {
-			matrix = scaleCol(matrix, selectedCol, scaleFactor);
+		const result =
+			selectedRow !== null
+				? scaleRow(matrix, selectedRow, scaleFactor)
+				: scaleCol(matrix, selectedCol!, scaleFactor);
+		if (!matricesEqual(result, matrix)) {
+			matrix = result;
+			history = [...history, { matrix, opLatex }];
+			steps += 1;
 		}
-		history = [...history, { matrix, opLatex }];
-		steps += 1;
 		scaleFactor = new Fraction(1);
 		scaleFactorText = '1';
 		selectedRow = null;
@@ -290,19 +293,19 @@
 				: kind === 'row'
 					? describeAddScaledRow(target, source, scaleFactor)
 					: describeAddScaledCol(target, source, scaleFactor);
-		if (kind === 'row') {
-			matrix =
-				dropMode === 'swap'
+		const result =
+			kind === 'row'
+				? dropMode === 'swap'
 					? swapRows(matrix, source, target)
-					: addScaledRow(matrix, target, source, scaleFactor);
-		} else {
-			matrix =
-				dropMode === 'swap'
+					: addScaledRow(matrix, target, source, scaleFactor)
+				: dropMode === 'swap'
 					? swapCols(matrix, source, target)
 					: addScaledCol(matrix, target, source, scaleFactor);
+		if (!matricesEqual(result, matrix)) {
+			matrix = result;
+			history = [...history, { matrix, opLatex }];
+			steps += 1;
 		}
-		history = [...history, { matrix, opLatex }];
-		steps += 1;
 		dropAction = null;
 		dropMode = 'combine';
 		scaleFactor = new Fraction(0);

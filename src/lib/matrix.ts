@@ -199,7 +199,7 @@ function randomDistinctPair(n: number): [number, number] {
 	return [a, b];
 }
 
-function matricesEqual(a: Matrix, b: Matrix): boolean {
+export function matricesEqual(a: Matrix, b: Matrix): boolean {
 	return a.length === b.length && a.every((row, i) => row.every((v, j) => v.equals(b[i][j])));
 }
 
