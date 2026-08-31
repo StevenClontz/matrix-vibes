@@ -24,9 +24,15 @@
 
 	let {
 		matrix = $bindable(),
+		markedCells = $bindable(new Set<string>()),
 		disableRowOps = false,
 		disableColOps = false
-	}: { matrix: Matrix; disableRowOps?: boolean; disableColOps?: boolean } = $props();
+	}: {
+		matrix: Matrix;
+		markedCells?: Set<string>;
+		disableRowOps?: boolean;
+		disableColOps?: boolean;
+	} = $props();
 
 	function opsDisabled(kind: 'row' | 'col'): boolean {
 		return kind === 'row' ? disableRowOps : disableColOps;
@@ -50,8 +56,6 @@
 
 	let hoveredRow = $state<number | null>(null);
 	let hoveredCol = $state<number | null>(null);
-
-	let markedCells = $state<Set<string>>(new Set());
 
 	type HistoryEntry = { matrix: Matrix; opLatex: string | null };
 

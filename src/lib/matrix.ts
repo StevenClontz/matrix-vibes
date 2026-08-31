@@ -38,6 +38,40 @@ export function matrixToLatex(m: Matrix, markedCells?: Set<string>): string {
 	return `\\begin{bmatrix} ${rows.join(' \\\\ ')} \\end{bmatrix}`;
 }
 
+/** True if m satisfies all RREF properties: zero rows at bottom, each pivot
+ *  equal to 1, pivot columns strictly increasing downward, each pivot the
+ *  only nonzero entry in its column. */
+export function isRref(m: Matrix): boolean {
+	let prevPivotCol = -1;
+	let seenZeroRow = false;
+	for (const row of m) {
+		const pivotCol = row.findIndex((v) => !v.equals(0));
+		if (pivotCol === -1) {
+			seenZeroRow = true;
+			continue;
+		}
+		if (seenZeroRow) return false; // nonzero row below a zero row
+		if (pivotCol <= prevPivotCol) return false;
+		if (!row[pivotCol].equals(1)) return false;
+		for (const otherRow of m) {
+			if (otherRow !== row && !otherRow[pivotCol].equals(0)) return false;
+		}
+		prevPivotCol = pivotCol;
+	}
+	return true;
+}
+
+/** cellKeys of each row's leading nonzero entry. Only meaningful as "the
+ *  pivots" once isRref(m) is true. */
+export function pivotCellKeys(m: Matrix): Set<string> {
+	const keys = new Set<string>();
+	m.forEach((row, i) => {
+		const j = row.findIndex((v) => !v.equals(0));
+		if (j !== -1) keys.add(cellKey(i, j));
+	});
+	return keys;
+}
+
 export function parseRational(text: string): Fraction | null {
 	try {
 		return new Fraction(text.trim());
