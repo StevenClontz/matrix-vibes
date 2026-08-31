@@ -1,8 +1,10 @@
 <script lang="ts">
-	import { parseRational, type Matrix } from './matrix';
+	import { parseRational, randomInt, randomRowOperation, randomRrefMatrix, type Matrix } from './matrix';
 
 	const MIN_DIM = 2;
 	const MAX_DIM = 10;
+	const RANDOM_MATRIX_MAX_ABS_VALUE = 9;
+	const ROW_OP_MAX_ABS_SCALAR = 3;
 
 	let {
 		current,
@@ -58,6 +60,19 @@
 		if (!allValid) return;
 		const newMatrix: Matrix = cellsText.map((row) => row.map((t) => parseRational(t)!));
 		oncreate(newMatrix);
+	}
+
+	function handleRandom() {
+		const rank = randomInt(1, Math.min(rows, cols));
+		const generated = randomRrefMatrix(rows, cols, rank, RANDOM_MATRIX_MAX_ABS_VALUE);
+		cellsText = generated.map((row) => row.map((v) => v.toFraction()));
+	}
+
+	function handleRandomRowOp() {
+		if (!allValid) return;
+		const currentMatrix: Matrix = cellsText.map((row) => row.map((t) => parseRational(t)!));
+		const result = randomRowOperation(currentMatrix, ROW_OP_MAX_ABS_SCALAR);
+		cellsText = result.map((row) => row.map((v) => v.toFraction()));
 	}
 
 	let firstInputEl = $state<HTMLInputElement>();
@@ -152,6 +167,19 @@
 		</div>
 
 		<div class="mt-6 flex flex-wrap items-center justify-center gap-3 border-t border-slate-200 pt-4">
+			<button
+				onclick={handleRandom}
+				class="rounded-md border border-violet-300 px-4 py-1.5 font-medium text-violet-600 transition-colors hover:bg-violet-50"
+			>
+				Random RREF
+			</button>
+			<button
+				onclick={handleRandomRowOp}
+				disabled={!allValid}
+				class="rounded-md border border-violet-300 px-4 py-1.5 font-medium text-violet-600 transition-colors hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
+			>
+				Random Row Op
+			</button>
 			<button
 				onclick={handleCreate}
 				disabled={!allValid}

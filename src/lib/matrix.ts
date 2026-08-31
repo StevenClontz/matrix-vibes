@@ -29,6 +29,99 @@ export function parseRational(text: string): Fraction | null {
 	}
 }
 
+/** Inclusive random integer in [min, max]. */
+export function randomInt(min: number, max: number): number {
+	return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function randomNonZeroInt(maxAbsValue: number): number {
+	const magnitude = randomInt(1, maxAbsValue);
+	return Math.random() < 0.5 ? -magnitude : magnitude;
+}
+
+/** Picks k distinct values from pool at random, sorted ascending. */
+function sampleDistinctSorted(pool: number[], k: number): number[] {
+	const arr = [...pool];
+	for (let i = 0; i < k; i++) {
+		const j = randomInt(i, arr.length - 1);
+		[arr[i], arr[j]] = [arr[j], arr[i]];
+	}
+	return arr.slice(0, k).sort((a, b) => a - b);
+}
+
+function columnKey(grid: number[][], col: number, rows: number): string {
+	const parts: string[] = [];
+	for (let i = 0; i < rows; i++) parts.push(String(grid[i][col]));
+	return parts.join(',');
+}
+
+/**
+ * Generates a random matrix already in reduced row echelon form (RREF).
+ * Never produces an all-zero column. By default no two columns are identical
+ * as vectors (best-effort: falls back to allowing a duplicate if the space of
+ * distinct possible vectors is smaller than the number of columns needed).
+ */
+export function randomRrefMatrix(
+	rows: number,
+	cols: number,
+	rank: number,
+	maxAbsValue: number,
+	allowRepeatedColumns = false
+): Matrix {
+	if (!Number.isInteger(rows) || rows < 1) throw new Error('rows must be a positive integer');
+	if (!Number.isInteger(cols) || cols < 1) throw new Error('cols must be a positive integer');
+	if (!Number.isInteger(rank) || rank < 1 || rank > Math.min(rows, cols)) {
+		throw new Error('rank must be an integer between 1 and min(rows, cols)');
+	}
+	if (!Number.isInteger(maxAbsValue) || maxAbsValue < 0) {
+		throw new Error('maxAbsValue must be a non-negative integer');
+	}
+	if (cols > rank && maxAbsValue < 1) {
+		throw new Error('maxAbsValue must be at least 1 when the matrix has free columns');
+	}
+	if (cols > rank && !allowRepeatedColumns && maxAbsValue < 2) {
+		throw new Error(
+			'maxAbsValue must be at least 2 when the matrix has free columns and repeated columns are not allowed'
+		);
+	}
+
+	// Column 0 must always be a pivot column: otherwise every column to its left
+	// would be forced to zero in every row, producing a forbidden zero column.
+	const remainingPool = Array.from({ length: cols - 1 }, (_, i) => i + 1);
+	const pivotCols = [0, ...sampleDistinctSorted(remainingPool, rank - 1)];
+	const pivotColSet = new Set(pivotCols);
+
+	const grid: number[][] = Array.from({ length: rows }, () => Array(cols).fill(0));
+	for (let i = 0; i < rank; i++) grid[i][pivotCols[i]] = 1;
+
+	const usedColumnKeys = new Set<string>();
+	for (const p of pivotCols) usedColumnKeys.add(columnKey(grid, p, rows));
+
+	const MAX_ATTEMPTS = 200;
+	for (let j = 0; j < cols; j++) {
+		if (pivotColSet.has(j)) continue;
+
+		const candidateRows: number[] = [];
+		for (let i = 0; i < rank; i++) if (pivotCols[i] < j) candidateRows.push(i);
+
+		let attempt = 0;
+		let key: string;
+		do {
+			for (const i of candidateRows) grid[i][j] = randomInt(-maxAbsValue, maxAbsValue);
+			if (candidateRows.every((i) => grid[i][j] === 0)) {
+				const forced = candidateRows[randomInt(0, candidateRows.length - 1)];
+				grid[forced][j] = randomNonZeroInt(maxAbsValue);
+			}
+			key = columnKey(grid, j, rows);
+			attempt++;
+		} while (!allowRepeatedColumns && usedColumnKeys.has(key) && attempt < MAX_ATTEMPTS);
+
+		usedColumnKeys.add(key);
+	}
+
+	return grid.map((row) => row.map((v) => new Fraction(v)));
+}
+
 // Row operations
 export function swapRows(m: Matrix, r1: number, r2: number): Matrix {
 	const result = cloneMatrix(m);
@@ -45,6 +138,60 @@ export function scaleRow(m: Matrix, r: number, scalar: Fraction): Matrix {
 export function addScaledRow(m: Matrix, target: number, source: number, scalar: Fraction): Matrix {
 	const result = cloneMatrix(m);
 	result[target] = result[target].map((v, j) => v.add(scalar.mul(m[source][j])));
+	return result;
+}
+
+function randomDistinctPair(n: number): [number, number] {
+	const a = randomInt(0, n - 1);
+	let b = randomInt(0, n - 1);
+	while (b === a) b = randomInt(0, n - 1);
+	return [a, b];
+}
+
+function matricesEqual(a: Matrix, b: Matrix): boolean {
+	return a.length === b.length && a.every((row, i) => row.every((v, j) => v.equals(b[i][j])));
+}
+
+function withinAbsBound(m: Matrix, bound: number): boolean {
+	return m.every((row) => row.every((v) => v.abs().valueOf() <= bound));
+}
+
+const ROW_OP_MAX_CELL_ABS_VALUE = 15;
+
+/**
+ * Applies one random elementary row operation (swap / scale / add-scaled-row) to m.
+ * Retries with a freshly chosen operation until a row actually changes and no cell
+ * exceeds ROW_OP_MAX_CELL_ABS_VALUE in absolute value (best effort, capped, in case
+ * no candidate op satisfies both, e.g. an all-zero matrix or an already-oversized cell).
+ */
+export function randomRowOperation(m: Matrix, maxAbsScalar: number): Matrix {
+	const rows = m.length;
+	const kinds: Array<'swap' | 'scale' | 'addScaled'> = ['scale'];
+	if (rows >= 2) kinds.push('swap', 'swap', 'addScaled', 'addScaled', 'addScaled', 'addScaled');
+
+	const MAX_ATTEMPTS = 50;
+	let result = m;
+	for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+		const kind = kinds[randomInt(0, kinds.length - 1)];
+		switch (kind) {
+			case 'swap': {
+				const [r1, r2] = randomDistinctPair(rows);
+				result = swapRows(m, r1, r2);
+				break;
+			}
+			case 'scale': {
+				const r = randomInt(0, rows - 1);
+				result = scaleRow(m, r, new Fraction(randomNonZeroInt(maxAbsScalar)));
+				break;
+			}
+			case 'addScaled': {
+				const [target, source] = randomDistinctPair(rows);
+				result = addScaledRow(m, target, source, new Fraction(randomNonZeroInt(maxAbsScalar)));
+				break;
+			}
+		}
+		if (!matricesEqual(result, m) && withinAbsBound(result, ROW_OP_MAX_CELL_ABS_VALUE)) return result;
+	}
 	return result;
 }
 
