@@ -20,7 +20,15 @@
 		parseRational
 	} from './matrix';
 
-	let { matrix = $bindable() }: { matrix: Matrix } = $props();
+	let {
+		matrix = $bindable(),
+		disableRowOps = false,
+		disableColOps = false
+	}: { matrix: Matrix; disableRowOps?: boolean; disableColOps?: boolean } = $props();
+
+	function opsDisabled(kind: 'row' | 'col'): boolean {
+		return kind === 'row' ? disableRowOps : disableColOps;
+	}
 
 	let selectedRow = $state<number | null>(null);
 	let selectedCol = $state<number | null>(null);
@@ -66,6 +74,7 @@
 
 		const interactable = interact(node)
 			.draggable({
+				enabled: !opsDisabled(current.kind),
 				listeners: {
 					start() {
 						if (current.kind === 'row') {
@@ -95,6 +104,7 @@
 				}
 			})
 			.dropzone({
+				enabled: !opsDisabled(current.kind),
 				accept: current.kind === 'row' ? '[data-row-handle]' : '[data-col-handle]',
 				overlap: 'pointer',
 				ondragenter() {
@@ -134,6 +144,7 @@
 	}
 
 	function selectRow(i: number) {
+		if (disableRowOps) return;
 		if (selectedRow === i) {
 			selectedRow = null;
 		} else {
@@ -146,6 +157,7 @@
 	}
 
 	function selectCol(j: number) {
+		if (disableColOps) return;
 		if (selectedCol === j) {
 			selectedCol = null;
 		} else {
@@ -278,19 +290,21 @@
 				<th class="w-10"></th>
 				{#each matrix[0] ?? [] as _, j (j)}
 					<th
-						class="touch-none select-none rounded-md p-2 text-center align-middle transition-colors {selectedCol ===
-						j
-							? 'text-violet-600'
-							: 'text-slate-200 hover:text-slate-400'}"
+						class="touch-none select-none rounded-md p-2 text-center align-middle transition-colors {disableColOps
+							? 'cursor-not-allowed text-slate-100'
+							: selectedCol === j
+								? 'text-violet-600'
+								: 'text-slate-200 hover:text-slate-400'}"
 						data-col-handle={j}
 						use:dragHandle={{ kind: 'col', index: j }}
-						tabindex="0"
+						tabindex={disableColOps ? -1 : 0}
+						aria-disabled={disableColOps}
 						aria-label={`Column ${j + 1}`}
 						title={`Column ${j + 1}`}
 						onkeydown={(e) => onHeaderKeydown(e, () => selectCol(j))}
-						onmouseenter={() => (hoveredCol = j)}
+						onmouseenter={() => { if (!disableColOps) hoveredCol = j; }}
 						onmouseleave={() => (hoveredCol = null)}
-						onfocus={() => (hoveredCol = j)}
+						onfocus={() => { if (!disableColOps) hoveredCol = j; }}
 						onblur={() => (hoveredCol = null)}
 					>
 						<span class="flex h-4 items-center justify-center">
@@ -304,19 +318,21 @@
 			{#each matrix as row, i (i)}
 				<tr>
 					<th
-						class="touch-none select-none rounded-md p-2 text-center align-middle transition-colors {selectedRow ===
-						i
-							? 'text-violet-600'
-							: 'text-slate-200 hover:text-slate-400'}"
+						class="touch-none select-none rounded-md p-2 text-center align-middle transition-colors {disableRowOps
+							? 'cursor-not-allowed text-slate-100'
+							: selectedRow === i
+								? 'text-violet-600'
+								: 'text-slate-200 hover:text-slate-400'}"
 						data-row-handle={i}
 						use:dragHandle={{ kind: 'row', index: i }}
-						tabindex="0"
+						tabindex={disableRowOps ? -1 : 0}
+						aria-disabled={disableRowOps}
 						aria-label={`Row ${i + 1}`}
 						title={`Row ${i + 1}`}
 						onkeydown={(e) => onHeaderKeydown(e, () => selectRow(i))}
-						onmouseenter={() => (hoveredRow = i)}
+						onmouseenter={() => { if (!disableRowOps) hoveredRow = i; }}
 						onmouseleave={() => (hoveredRow = null)}
-						onfocus={() => (hoveredRow = i)}
+						onfocus={() => { if (!disableRowOps) hoveredRow = i; }}
 						onblur={() => (hoveredRow = null)}
 					>
 						<span class="flex h-4 items-center justify-center">

@@ -20,7 +20,7 @@
 	<h1 class="text-2xl font-bold text-slate-800">RREF Skill Test</h1>
 	{#if started}
 		<p class="text-sm text-slate-600">Name: {studentName} · Instructor: {instructorName}</p>
-		<MatrixView bind:matrix />
+		<MatrixView bind:matrix disableColOps />
 	{/if}
 </main>
 
