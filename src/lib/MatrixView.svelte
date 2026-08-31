@@ -480,6 +480,10 @@
 								aria-label={`Row ${i + 1}, column ${j + 1}`}
 								onclick={() => toggleMark(i, j)}
 								onkeydown={(e) => onHeaderKeydown(e, () => toggleMark(i, j))}
+								onmouseenter={() => { hoveredRow = i; hoveredCol = j; }}
+								onmouseleave={() => { hoveredRow = null; hoveredCol = null; }}
+								onfocus={() => { hoveredRow = i; hoveredCol = j; }}
+								onblur={() => { hoveredRow = null; hoveredCol = null; }}
 								class="flex min-w-10 cursor-pointer items-center justify-center gap-1.5 rounded-md border px-3 py-1.5 text-center font-mathnum text-slate-700 transition-colors {marked
 									? 'border-violet-500'
 									: 'border-transparent'} {isDragging
