@@ -49,6 +49,20 @@
 	let hoveredRow = $state<number | null>(null);
 	let hoveredCol = $state<number | null>(null);
 
+	let markedCells = $state<Set<string>>(new Set());
+
+	function cellKey(i: number, j: number): string {
+		return `${i},${j}`;
+	}
+
+	function toggleMark(i: number, j: number) {
+		const key = cellKey(i, j);
+		const next = new Set(markedCells);
+		if (next.has(key)) next.delete(key);
+		else next.add(key);
+		markedCells = next;
+	}
+
 	let draggedRow = $state<number | null>(null);
 	let draggedCol = $state<number | null>(null);
 
@@ -351,9 +365,18 @@
 								? { from: value, to: value.mul(scaleFactor), showArrow: true }
 								: null}
 						{@const preview = isAnyDragActive ? dragPreview : (scalePreview ?? computeDropPreview(i, j))}
+						{@const marked = markedCells.has(cellKey(i, j))}
 						<td class="min-w-12 px-2 py-1">
 							<div
-								class="flex min-w-10 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-center font-mathnum text-slate-700 transition-colors {isDragging
+								role="button"
+								tabindex="0"
+								aria-pressed={marked}
+								aria-label={`Row ${i + 1}, column ${j + 1}`}
+								onclick={() => toggleMark(i, j)}
+								onkeydown={(e) => onHeaderKeydown(e, () => toggleMark(i, j))}
+								class="flex min-w-10 cursor-pointer items-center justify-center gap-1.5 rounded-md border px-3 py-1.5 text-center font-mathnum text-slate-700 transition-colors {marked
+									? 'border-violet-500'
+									: 'border-transparent'} {isDragging
 									? 'bg-violet-50'
 									: preview
 										? !preview.to.equals(preview.from)
