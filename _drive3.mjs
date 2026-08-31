@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const browser = await chromium.launch({ args: ['--no-sandbox'] });
+const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
+await page.goto('http://localhost:5173');
+await page.waitForSelector('text=Row and Column Operations Calculator');
+await page.locator('[data-row-handle="0"]').click();
+await page.waitForTimeout(300);
+const hasSubmit = await page.locator('button:has-text("Submit")').count();
+console.log('hasSubmit', hasSubmit);
+await page.screenshot({ path: '/tmp/claude-1000/-workspaces-matrix-vibes/aafd3a79-adfe-43b5-9c77-c6143120bb6c/scratchpad/click-test2.png' });
+await browser.close();

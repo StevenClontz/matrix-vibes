@@ -53,20 +53,32 @@
 
 	let markedCells = $state<Set<string>>(new Set());
 
-	let history = $state<Matrix[]>([matrix]);
+	type HistoryEntry = { matrix: Matrix; opLatex: string | null };
+
+	let history = $state<HistoryEntry[]>([{ matrix, opLatex: null }]);
 
 	$effect(() => {
-		if (matrix !== history[history.length - 1]) {
-			history = [matrix];
+		if (matrix !== history[history.length - 1].matrix) {
+			history = [{ matrix, opLatex: null }];
 		}
 	});
 
-	const simHtml = katex.renderToString('\\sim', { throwOnError: false });
 	let historyItemsHtml = $derived(
-		history.map((m, idx) =>
-			katex.renderToString(matrixToLatex(m, idx === history.length - 1 ? markedCells : undefined), {
-				throwOnError: false
-			})
+		history.map((entry, idx) =>
+			katex.renderToString(
+				matrixToLatex(entry.matrix, idx === history.length - 1 ? markedCells : undefined),
+				{ throwOnError: false }
+			)
+		)
+	);
+	let historyConnectorsHtml = $derived(
+		history.slice(1).map((entry) =>
+			katex.renderToString(
+				entry.opLatex
+					? `\\begin{array}{c}\\scriptsize ${entry.opLatex}\\\\[3pt]\\sim\\end{array}`
+					: '\\sim',
+				{ throwOnError: false }
+			)
 		)
 	);
 
@@ -236,12 +248,16 @@
 
 	function applyScale() {
 		if (!scaleFactorValid || scaleFactorIsZero) return;
+		const opLatex =
+			selectedRow !== null
+				? describeScaleRow(selectedRow, scaleFactor)
+				: describeScaleCol(selectedCol!, scaleFactor);
 		if (selectedRow !== null) {
 			matrix = scaleRow(matrix, selectedRow, scaleFactor);
 		} else if (selectedCol !== null) {
 			matrix = scaleCol(matrix, selectedCol, scaleFactor);
 		}
-		history = [...history, matrix];
+		history = [...history, { matrix, opLatex }];
 		scaleFactor = new Fraction(1);
 		scaleFactorText = '1';
 		selectedRow = null;
@@ -259,6 +275,14 @@
 		if (!dropAction) return;
 		if (dropMode === 'combine' && !scaleFactorValid) return;
 		const { kind, source, target } = dropAction;
+		const opLatex =
+			dropMode === 'swap'
+				? kind === 'row'
+					? describeSwapRows(source, target)
+					: describeSwapCols(source, target)
+				: kind === 'row'
+					? describeAddScaledRow(target, source, scaleFactor)
+					: describeAddScaledCol(target, source, scaleFactor);
 		if (kind === 'row') {
 			matrix =
 				dropMode === 'swap'
@@ -270,7 +294,7 @@
 					? swapCols(matrix, source, target)
 					: addScaledCol(matrix, target, source, scaleFactor);
 		}
-		history = [...history, matrix];
+		history = [...history, { matrix, opLatex }];
 		dropAction = null;
 		dropMode = 'combine';
 		scaleFactor = new Fraction(0);
@@ -358,7 +382,7 @@
 		<div class="flex items-center gap-3 py-4" bind:this={historyContentRow}>
 			{#each historyItemsHtml as itemHtml, idx (idx)}
 				{#if idx > 0}
-					<span class="text-slate-400">{@html simHtml}</span>
+					<span class="text-slate-400">{@html historyConnectorsHtml[idx - 1]}</span>
 				{/if}
 				<span class="history-item {idx < historyItemsHtml.length - 1 ? 'text-slate-400' : ''}">
 					{@html itemHtml}
