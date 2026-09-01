@@ -319,6 +319,16 @@
 		scaleFactorText = '0';
 	}
 
+	function undo() {
+		if (history.length < 2) return;
+		history = history.slice(0, -1);
+		matrix = history[history.length - 1].matrix;
+		steps = Math.max(0, steps - 1);
+		selectedRow = null;
+		selectedCol = null;
+		dropAction = null;
+	}
+
 	function computeDropPreview(
 		i: number,
 		j: number
@@ -403,7 +413,17 @@
 	</div>
 </div>
 
-<div class="inline-block overflow-auto rounded-lg border border-slate-300 bg-white p-4 shadow-sm select-none">
+<div class="flex w-full justify-center px-1 pb-2">
+	<button
+		onclick={undo}
+		disabled={history.length < 2}
+		class="cursor-pointer border border-slate-300 rounded-md px-3 py-1 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:border-none"
+	>
+		Undo
+	</button>
+</div>
+
+<div class="w-full overflow-auto rounded-lg border border-slate-300 bg-white p-4 shadow-sm select-none">
 	<table class="border-collapse mx-auto">
 		<thead>
 			<tr>
