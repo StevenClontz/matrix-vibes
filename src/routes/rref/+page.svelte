@@ -17,6 +17,7 @@
 	let wrongAttempts = $state(0);
 	let showResultModal = $state(false);
 	let isPracticeMode = $state(false);
+	let submittedAt = $state<Date | null>(null);
 
 	function handleSubmit(name: string, instructor: string) {
 		studentName = name;
@@ -43,6 +44,7 @@
 			truePivots.size === markedCells.size && [...truePivots].every((k) => markedCells.has(k));
 		if (isRref(matrix) && pivotsMatch) {
 			claimResult = 'success';
+			submittedAt = new Date();
 			showResultModal = true;
 			return;
 		}
@@ -73,7 +75,7 @@
 			{:else}
 				Name: {studentName} 
 				· Instructor: {instructorName}
-				· Attempts: {wrongAttempts}/{MAX_WRONG_ATTEMPTS}
+				· Attempts remaining: {MAX_WRONG_ATTEMPTS-wrongAttempts}/{MAX_WRONG_ATTEMPTS}
 			{/if}
 		</p>
 		{#if claimResult === 'success'}
@@ -115,6 +117,7 @@
 		{markedCells}
 		attempts={wrongAttempts + 1}
 		{steps}
+		submittedAt={submittedAt as Date}
 		onclose={() => (showResultModal = false)}
 	/>
 {/if}
