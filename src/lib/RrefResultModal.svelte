@@ -25,7 +25,7 @@
 	} = $props();
 
 	let beforeHtml = $derived(
-		katex.renderToString(matrixToLatex(beforeMatrix), { throwOnError: false }) + "\\sim\\cdots"
+		katex.renderToString(matrixToLatex(beforeMatrix), { throwOnError: false })
 	);
 	let afterHtml = $derived(
 		katex.renderToString("\\sim" + matrixToLatex(afterMatrix, markedCells), { throwOnError: false })

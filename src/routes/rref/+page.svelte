@@ -30,6 +30,8 @@
 	}
 
 	function handlePractice() {
+		studentName = "PRACTICE";
+		instructorName = "PRACTICE";
 		matrix = generateSkillTestMatrix();
 		initialMatrix = matrix;
 		steps = 0;
