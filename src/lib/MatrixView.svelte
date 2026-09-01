@@ -492,7 +492,7 @@
 								: null}
 						{@const preview = isAnyDragActive ? dragPreview : (scalePreview ?? computeDropPreview(i, j))}
 						{@const marked = markedCells.has(cellKey(i, j))}
-						<td class="min-w-12 px-2 py-1">
+						<td class="min-w-20 px-2 py-1">
 							<div
 								role="button"
 								tabindex="0"
@@ -504,7 +504,7 @@
 								onmouseleave={() => { hoveredRow = null; hoveredCol = null; }}
 								onfocus={() => { hoveredRow = i; hoveredCol = j; }}
 								onblur={() => { hoveredRow = null; hoveredCol = null; }}
-								class="flex min-w-10 cursor-pointer items-center justify-center gap-1.5 rounded-md border px-3 py-1.5 text-center font-mathnum text-slate-700 transition-colors {marked
+								class="flex min-w-20 cursor-pointer items-center justify-center gap-1.5 rounded-md border px-3 py-1.5 text-center font-mathnum text-slate-700 transition-colors {marked
 									? 'border-violet-500'
 									: 'border-transparent'} {isDragging
 									? 'bg-violet-50'
