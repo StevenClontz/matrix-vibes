@@ -2,6 +2,7 @@
 	import MatrixView from '$lib/MatrixView.svelte';
 	import StudentInfoModal from '$lib/StudentInfoModal.svelte';
 	import RrefResultModal from '$lib/RrefResultModal.svelte';
+	import AlertModal from '$lib/AlertModal.svelte';
 	import { generateSkillTestMatrix, isRref, pivotCellKeys, type Matrix } from '$lib/matrix';
 
 	const MAX_WRONG_ATTEMPTS = 3;
@@ -18,6 +19,8 @@
 	let showResultModal = $state(false);
 	let isPracticeMode = $state(false);
 	let submittedAt = $state<Date | null>(null);
+	let alertMessage: string | null = $state(null);
+	let alertReloadOnClose = $state(false);
 
 	function handleSubmit(name: string, instructor: string) {
 		studentName = name;
@@ -52,15 +55,13 @@
 		}
 		wrongAttempts += 1;
 		if (!isPracticeMode && wrongAttempts >= MAX_WRONG_ATTEMPTS) {
-			alert(
-				"You've used all 3 attempts without a correct answer. You'll need to reattempt the test — the page will now reload with a new matrix."
-			);
-			location.reload();
+			alertMessage =
+				"You've used all 3 attempts without a correct answer. You'll need to reattempt the test — the page will now reload with a new matrix.";
+			alertReloadOnClose = true;
 			return;
 		}
-		alert(
-			'Not quite — double-check that your matrix satisfies all the properties of RREF, and that every pivot (and no non-pivot) is marked.'
-		);
+		alertMessage =
+			'Not quite — double-check that your matrix satisfies all the properties of RREF, and that every pivot (and no non-pivot) is marked.';
 	}
 </script>
 
@@ -121,5 +122,18 @@
 		{steps}
 		submittedAt={submittedAt as Date}
 		onclose={() => (showResultModal = false)}
+	/>
+{/if}
+
+{#if alertMessage}
+	<AlertModal
+		title="Incorrect Submission"
+		message={alertMessage}
+		onclose={() => {
+			const shouldReload = alertReloadOnClose;
+			alertMessage = null;
+			alertReloadOnClose = false;
+			if (shouldReload) location.reload();
+		}}
 	/>
 {/if}

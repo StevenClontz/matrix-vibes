@@ -53,8 +53,7 @@
 	>
 		<h2 id="rref-result-title" class="text-lg font-bold text-emerald-700">RREF Found!</h2>
 		<p class="text-sm text-slate-600">Name: {studentName} · Instructor: {instructorName}</p>
-		<p class="text-sm text-slate-600">Attempts: {attempts}</p>
-		<p class="text-sm text-slate-600">Steps: {steps}</p>
+		<p class="text-sm text-slate-600">Attempts: {attempts} · Steps: {steps}</p>
 		<p class="text-sm text-slate-600">Completed on: {submittedAt.toLocaleString()}</p>
 		<div class="flex flex-col items-center gap-2">
 			<div>{@html beforeHtml}</div>
