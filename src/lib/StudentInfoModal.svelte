@@ -1,8 +1,10 @@
 <script lang="ts">
 	let {
-		onsubmit
+		onsubmit,
+		onpractice
 	}: {
 		onsubmit: (name: string, instructor: string) => void;
+		onpractice: () => void;
 	} = $props();
 
 	let name = $state('');
@@ -60,5 +62,17 @@
 				Start
 			</button>
 		</form>
+		<div class="relative flex items-center">
+			<div class="flex-grow border-t border-gray-300"></div>
+				<span class="flex-shrink mx-4 text-gray-400">or</span>
+			<div class="flex-grow border-t border-gray-300"></div>
+		</div>
+		<button
+			type="button"
+			onclick={onpractice}
+			class="mt-2 rounded-md bg-sky-600 px-4 py-1.5 font-medium text-white transition-colors hover:bg-sky-700"
+		>
+			Practice
+		</button>
 	</div>
 </div>

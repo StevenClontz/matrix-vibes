@@ -16,6 +16,7 @@
 	let claimResult = $state<'success' | null>(null);
 	let wrongAttempts = $state(0);
 	let showResultModal = $state(false);
+	let isPracticeMode = $state(false);
 
 	function handleSubmit(name: string, instructor: string) {
 		studentName = name;
@@ -23,6 +24,16 @@
 		matrix = generateSkillTestMatrix();
 		initialMatrix = matrix;
 		steps = 0;
+		isPracticeMode = false;
+		started = true;
+	}
+
+	function handlePractice() {
+		matrix = generateSkillTestMatrix();
+		initialMatrix = matrix;
+		steps = 0;
+		wrongAttempts = 0;
+		isPracticeMode = true;
 		started = true;
 	}
 
@@ -36,7 +47,7 @@
 			return;
 		}
 		wrongAttempts += 1;
-		if (wrongAttempts >= MAX_WRONG_ATTEMPTS) {
+		if (!isPracticeMode && wrongAttempts >= MAX_WRONG_ATTEMPTS) {
 			alert(
 				"You've used all 3 attempts without a correct answer. You'll need to reattempt the test — the page will now reload with a new matrix."
 			);
@@ -49,10 +60,22 @@
 	}
 </script>
 
-<main class="flex min-h-screen flex-col items-center gap-6 bg-slate-50 p-10">
+<main class="flex min-h-screen flex-col items-center gap-4 bg-slate-50 p-10">
 	<h1 class="text-2xl font-bold text-slate-800">RREF Skill Test</h1>
 	{#if started}
-		<p class="text-sm text-slate-600">Name: {studentName} · Instructor: {instructorName}</p>
+		<p class="text-sm text-slate-800">
+			Use the controls below to manipulate the given matrix into reduced
+			row echelon form, and click the cells to mark each pivot.
+		</p>
+		<p class="text-sm text-slate-600">
+			{#if isPracticeMode}
+				Practice · Attempts: {wrongAttempts}
+			{:else}
+				Name: {studentName} 
+				· Instructor: {instructorName}
+				· Attempts: {wrongAttempts}/{MAX_WRONG_ATTEMPTS}
+			{/if}
+		</p>
 		{#if claimResult === 'success'}
 			<p class="max-w-md text-center text-sm font-medium text-emerald-700">
 				Test complete — this matrix was confirmed in RREF.
@@ -64,19 +87,23 @@
 				View Result
 			</button>
 		{:else}
-			<MatrixView bind:matrix bind:markedCells bind:steps disableColOps />
 			<button
 				onclick={claimFinished}
 				class="rounded-md bg-sky-600 px-4 py-2 font-medium text-white transition-colors hover:bg-sky-700"
 			>
-				Confirm RREF
+				{#if isPracticeMode}
+					Check if matrix is RREF
+				{:else}
+					Submit matrix as RREF
+				{/if}
 			</button>
+			<MatrixView bind:matrix bind:markedCells bind:steps disableColOps />
 		{/if}
 	{/if}
 </main>
 
 {#if !started}
-	<StudentInfoModal onsubmit={handleSubmit} />
+	<StudentInfoModal onsubmit={handleSubmit} onpractice={handlePractice} />
 {/if}
 
 {#if showResultModal}
