@@ -53,10 +53,15 @@
 	let scaleFactorText = $state('1');
 	let scaleFactorValid = $derived(parseRational(scaleFactorText) !== null);
 	let scaleFactorIsZero = $derived(scaleFactorValid && scaleFactor.equals(0));
-	let scaleFactorSlider = $derived.by(() => {
+	let scaleFactorMaxMagnitude = $derived.by(() => {
+		let maxAbs = 0;
+		for (const row of matrix) for (const v of row) maxAbs = Math.max(maxAbs, v.abs().valueOf());
+		return Math.max(10, Math.ceil(maxAbs));
+	});
+	let scaleFactorSliderValue = $derived.by(() => {
 		if (!scaleFactorValid) return 0;
 		const n = Math.round(scaleFactor.valueOf());
-		return Math.max(-10, Math.min(10, n));
+		return Math.max(-scaleFactorMaxMagnitude, Math.min(scaleFactorMaxMagnitude, n));
 	});
 
 	let hoveredRow = $state<number | null>(null);
@@ -626,36 +631,49 @@
 {#snippet scaleControls(allowZero: boolean = true)}
 	{@const isInvalid = !scaleFactorValid || (!allowZero && scaleFactorIsZero)}
 	<div class="flex items-center justify-center gap-3 my-2">
-	<label>Scaling factor:
-	<input
-		type="text"
-		inputmode="text"
-		value={scaleFactorText}
-		oninput={(e) => {
-			scaleFactorText = e.currentTarget.value;
-			const parsed = parseRational(scaleFactorText);
-			if (parsed !== null) scaleFactor = parsed;
-		}}
-		aria-invalid={isInvalid}
-		class="min-w-10 [field-sizing:content] text-center rounded-md border px-2 py-1 font-mathnum focus:outline-none {isInvalid
-			? 'border-red-400 text-red-600 focus:border-red-500'
-			: 'border-slate-300 text-slate-700 focus:border-violet-400'}"
-	/></label>
+		<label>Scaling factor:
+		<input
+			type="text"
+			inputmode="text"
+			value={scaleFactorText}
+			oninput={(e) => {
+				scaleFactorText = e.currentTarget.value;
+				const parsed = parseRational(scaleFactorText);
+				if (parsed !== null) scaleFactor = parsed;
+			}}
+			aria-invalid={isInvalid}
+			class="min-w-10 [field-sizing:content] text-center rounded-md border px-2 py-1 font-mathnum focus:outline-none {isInvalid
+				? 'border-red-400 text-red-600 focus:border-red-500'
+				: 'border-slate-300 text-slate-700 focus:border-violet-400'}"
+		/></label>
+		<button
+			type="button"
+			onclick={() => {
+				const inverted = scaleFactor.inverse();
+				scaleFactor = inverted;
+				scaleFactorText = inverted.toFraction();
+			}}
+			disabled={!scaleFactorValid || scaleFactorIsZero}
+			aria-label="Invert scaling factor"
+			class="cursor-pointer border border-violet-200 rounded-md px-2 py-1 text-sm font-medium text-violet-400 transition-colors hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:border-none"
+		>
+			x⁻¹
+		</button>
 	</div>
 	<div class="flex items-center justify-center gap-3 my-2">
 		<input
 			type="range"
-			min="-10"
-			max="10"
+			min={-scaleFactorMaxMagnitude}
+			max={scaleFactorMaxMagnitude}
 			step="1"
-			value={scaleFactorSlider}
+			value={scaleFactorSliderValue}
 			oninput={(e) => {
 				const n = Number(e.currentTarget.value);
 				scaleFactor = new Fraction(n);
 				scaleFactorText = String(n);
 			}}
 			aria-label="Scaling factor slider"
-			class="w-32 accent-violet-600"
+			class="w-64 accent-violet-600"
 		/>
 	</div>
 {/snippet}
