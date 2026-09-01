@@ -66,7 +66,9 @@
 			<h2 id="rref-result-title" class="text-lg font-bold text-emerald-700">RREF Found!</h2>
 			<p class="text-sm text-slate-800">Name: {studentName} · Instructor: {instructorName}</p>
 			<p class="text-sm text-slate-600">Attempts: {wrongAttempts + 1} · Steps: {steps}</p>
-			<p class="text-sm text-slate-600">Completed on: {(submittedAt as Date).toLocaleString()}</p>
+			{#if !isPracticeMode}
+				<p class="text-sm text-slate-600">Completed on: {(submittedAt as Date).toLocaleString()}</p>
+			{/if}
 		{:else}
 			<p class="text-sm text-slate-800">
 				Use the controls below to manipulate the given matrix into reduced
