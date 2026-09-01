@@ -73,7 +73,7 @@
 		</p>
 		<p class="text-sm text-slate-600">
 			{#if isPracticeMode}
-				Practice · Attempts: {wrongAttempts}
+				Practice Mode · Attempts: {wrongAttempts}
 			{:else}
 				Name: {studentName} 
 				· Instructor: {instructorName}
