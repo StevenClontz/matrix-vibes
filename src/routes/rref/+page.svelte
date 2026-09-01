@@ -1,9 +1,9 @@
 <script lang="ts">
 	import MatrixView from '$lib/MatrixView.svelte';
 	import StudentInfoModal from '$lib/StudentInfoModal.svelte';
-	import RrefResultModal from '$lib/RrefResultModal.svelte';
+	import katex from 'katex';
 	import AlertModal from '$lib/AlertModal.svelte';
-	import { generateSkillTestMatrix, isRref, pivotCellKeys, type Matrix } from '$lib/matrix';
+	import { generateSkillTestMatrix, isRref, matrixToLatex, pivotCellKeys, type Matrix } from '$lib/matrix';
 
 	const MAX_WRONG_ATTEMPTS = 3;
 
@@ -16,7 +16,6 @@
 	let started = $state(false);
 	let claimResult = $state<'success' | null>(null);
 	let wrongAttempts = $state(0);
-	let showResultModal = $state(false);
 	let isPracticeMode = $state(false);
 	let submittedAt = $state<Date | null>(null);
 	let alertMessage: string | null = $state(null);
@@ -50,7 +49,6 @@
 		if (isRref(matrix) && pivotsMatch) {
 			claimResult = 'success';
 			submittedAt = new Date();
-			showResultModal = true;
 			return;
 		}
 		wrongAttempts += 1;
@@ -68,30 +66,28 @@
 <main class="flex min-h-screen flex-col items-center gap-4 bg-slate-50 p-10 pb-0">
 	<h1 class="text-2xl font-bold text-slate-800">RREF Skill Test</h1>
 	{#if started}
-		<p class="text-sm text-slate-800">
-			Use the controls below to manipulate the given matrix into reduced
-			row echelon form, and click the cells to mark each pivot.
-		</p>
-		<p class="text-sm text-slate-600">
-			{#if isPracticeMode}
-				Practice Mode · Attempts: {wrongAttempts}
-			{:else}
-				Name: {studentName} 
-				· Instructor: {instructorName}
-				· Attempts remaining: {MAX_WRONG_ATTEMPTS-wrongAttempts}/{MAX_WRONG_ATTEMPTS}
-			{/if}
-		</p>
 		{#if claimResult === 'success'}
-			<p class="max-w-md text-center text-sm font-medium text-emerald-700">
-				Test complete — this matrix was confirmed in RREF.
-			</p>
-			<button
-				onclick={() => (showResultModal = true)}
-				class="rounded-md bg-violet-600 px-4 py-2 font-medium text-white transition-colors hover:bg-violet-700"
-			>
-				View Result
-			</button>
+			<h2 id="rref-result-title" class="text-lg font-bold text-emerald-700">RREF Found!</h2>
+			<p class="text-sm text-slate-600">Name: {studentName} · Instructor: {instructorName}</p>
+			<p class="text-sm text-slate-600">Attempts: {wrongAttempts + 1} · Steps: {steps}</p>
+			<p class="text-sm text-slate-600">Completed on: {(submittedAt as Date).toLocaleString()}</p>
+			<div class="flex flex-col items-center gap-2">
+				<div>{@html katex.renderToString(matrixToLatex(initialMatrix) + "\\sim" + matrixToLatex(matrix), { throwOnError: false })}</div>
+			</div>
 		{:else}
+			<p class="text-sm text-slate-800">
+				Use the controls below to manipulate the given matrix into reduced
+				row echelon form, and click the cells to mark each pivot.
+			</p>
+			<p class="text-sm text-slate-600">
+				{#if isPracticeMode}
+					Practice Mode · Attempts: {wrongAttempts}
+				{:else}
+					Name: {studentName} 
+					· Instructor: {instructorName}
+					· Attempts remaining: {MAX_WRONG_ATTEMPTS-wrongAttempts}/{MAX_WRONG_ATTEMPTS}
+				{/if}
+			</p>
 			<button
 				onclick={claimFinished}
 				class="rounded-md bg-sky-600 px-4 py-2 font-medium text-white transition-colors hover:bg-sky-700"
@@ -109,20 +105,6 @@
 
 {#if !started}
 	<StudentInfoModal onsubmit={handleSubmit} onpractice={handlePractice} />
-{/if}
-
-{#if showResultModal}
-	<RrefResultModal
-		{studentName}
-		{instructorName}
-		beforeMatrix={initialMatrix}
-		afterMatrix={matrix}
-		{markedCells}
-		attempts={wrongAttempts + 1}
-		{steps}
-		submittedAt={submittedAt as Date}
-		onclose={() => (showResultModal = false)}
-	/>
 {/if}
 
 {#if alertMessage}
