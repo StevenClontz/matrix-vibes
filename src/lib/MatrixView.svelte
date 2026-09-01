@@ -28,13 +28,15 @@
 		markedCells = $bindable(new Set<string>()),
 		steps = $bindable(0),
 		disableRowOps = false,
-		disableColOps = false
+		disableColOps = false,
+		hideControls = false
 	}: {
 		matrix: Matrix;
 		markedCells?: Set<string>;
 		steps?: number;
 		disableRowOps?: boolean;
 		disableColOps?: boolean;
+		hideControls?: boolean;
 	} = $props();
 
 	function opsDisabled(kind: 'row' | 'col'): boolean {
@@ -427,6 +429,7 @@
 	</div>
 </div>
 
+{#if !hideControls}
 <div class="flex w-full justify-center px-1 pb-2">
 	<button
 		onclick={undo}
@@ -582,7 +585,8 @@
 		)}
 	{/if}
 </div>
-<div bind:this={controlPanelBottomEl}/>
+<div bind:this={controlPanelBottomEl}></div>
+{/if}
 
 {#snippet controlPanel(
 	descriptionHtml: string,

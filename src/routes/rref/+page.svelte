@@ -1,16 +1,14 @@
 <script lang="ts">
 	import MatrixView from '$lib/MatrixView.svelte';
 	import StudentInfoModal from '$lib/StudentInfoModal.svelte';
-	import katex from 'katex';
 	import AlertModal from '$lib/AlertModal.svelte';
-	import { generateSkillTestMatrix, isRref, matrixToLatex, pivotCellKeys, type Matrix } from '$lib/matrix';
+	import { generateSkillTestMatrix, isRref, pivotCellKeys, type Matrix } from '$lib/matrix';
 
 	const MAX_WRONG_ATTEMPTS = 3;
 
 	let studentName = $state('');
 	let instructorName = $state('');
 	let matrix: Matrix = $state<Matrix>([]);
-	let initialMatrix: Matrix = $state<Matrix>([]);
 	let markedCells: Set<string> = $state(new Set());
 	let steps = $state(0);
 	let started = $state(false);
@@ -25,7 +23,6 @@
 		studentName = name;
 		instructorName = instructor;
 		matrix = generateSkillTestMatrix();
-		initialMatrix = matrix;
 		steps = 0;
 		isPracticeMode = false;
 		started = true;
@@ -35,7 +32,6 @@
 		studentName = "PRACTICE";
 		instructorName = "PRACTICE";
 		matrix = generateSkillTestMatrix();
-		initialMatrix = matrix;
 		steps = 0;
 		wrongAttempts = 0;
 		isPracticeMode = true;
@@ -68,12 +64,9 @@
 	{#if started}
 		{#if claimResult === 'success'}
 			<h2 id="rref-result-title" class="text-lg font-bold text-emerald-700">RREF Found!</h2>
-			<p class="text-sm text-slate-600">Name: {studentName} · Instructor: {instructorName}</p>
+			<p class="text-sm text-slate-800">Name: {studentName} · Instructor: {instructorName}</p>
 			<p class="text-sm text-slate-600">Attempts: {wrongAttempts + 1} · Steps: {steps}</p>
 			<p class="text-sm text-slate-600">Completed on: {(submittedAt as Date).toLocaleString()}</p>
-			<div class="flex flex-col items-center gap-2">
-				<div>{@html katex.renderToString(matrixToLatex(initialMatrix) + "\\sim" + matrixToLatex(matrix), { throwOnError: false })}</div>
-			</div>
 		{:else}
 			<p class="text-sm text-slate-800">
 				Use the controls below to manipulate the given matrix into reduced
@@ -83,7 +76,7 @@
 				{#if isPracticeMode}
 					Practice Mode · Attempts: {wrongAttempts}
 				{:else}
-					Name: {studentName} 
+					Name: {studentName}
 					· Instructor: {instructorName}
 					· Attempts remaining: {MAX_WRONG_ATTEMPTS-wrongAttempts}/{MAX_WRONG_ATTEMPTS}
 				{/if}
@@ -98,8 +91,8 @@
 					Submit matrix as RREF
 				{/if}
 			</button>
-			<MatrixView bind:matrix bind:markedCells bind:steps disableColOps />
 		{/if}
+		<MatrixView bind:matrix bind:markedCells bind:steps disableColOps hideControls={claimResult === 'success'} />
 	{/if}
 </main>
 
