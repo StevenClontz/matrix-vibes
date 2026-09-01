@@ -60,6 +60,20 @@
 	let hoveredRow = $state<number | null>(null);
 	let hoveredCol = $state<number | null>(null);
 
+	let controlPanelEl: HTMLDivElement | undefined;
+	let controlPanelBottomEl: HTMLDivElement | undefined;
+	let controlPanelVisible = $derived(
+		selectedRow !== null || selectedCol !== null || dropAction !== null
+	);
+
+	$effect(() => {
+		if (controlPanelVisible) {
+			tick().then(() => {
+				controlPanelBottomEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+			});
+		}
+	});
+
 	type HistoryEntry = { matrix: Matrix; opLatex: string | null };
 
 	let history = $state<HistoryEntry[]>([{ matrix, opLatex: null }]);
@@ -568,6 +582,7 @@
 		)}
 	{/if}
 </div>
+<div bind:this={controlPanelBottomEl}/>
 
 {#snippet controlPanel(
 	descriptionHtml: string,
@@ -576,7 +591,10 @@
 	controls: Snippet,
 	submitDisabled: boolean = false
 )}
-	<div class="mt-3 flex flex-col border-t border-slate-200 pt-3 text-sm text-slate-600">
+	<div
+		bind:this={controlPanelEl}
+		class="mt-3 flex flex-col border-t border-slate-200 pt-3 text-sm text-slate-600"
+	>
 		<div class="text-slate-700">
 			{@render controls()}
 		</div>
