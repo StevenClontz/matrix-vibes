@@ -81,23 +81,35 @@ export function parseRational(text: string): Fraction | null {
 }
 
 /** Inclusive random integer in [min, max]. */
-export function randomInt(min: number, max: number): number {
-	return Math.floor(Math.random() * (max - min + 1)) + min;
+export function randomInt(min: number, max: number, rng: () => number = Math.random): number {
+	return Math.floor(rng() * (max - min + 1)) + min;
 }
 
-function randomNonZeroInt(maxAbsValue: number): number {
-	const magnitude = randomInt(1, maxAbsValue);
-	return Math.random() < 0.5 ? -magnitude : magnitude;
+function randomNonZeroInt(maxAbsValue: number, rng: () => number = Math.random): number {
+	const magnitude = randomInt(1, maxAbsValue, rng);
+	return rng() < 0.5 ? -magnitude : magnitude;
 }
 
 /** Picks k distinct values from pool at random, sorted ascending. */
-function sampleDistinctSorted(pool: number[], k: number): number[] {
+function sampleDistinctSorted(pool: number[], k: number, rng: () => number = Math.random): number[] {
 	const arr = [...pool];
 	for (let i = 0; i < k; i++) {
-		const j = randomInt(i, arr.length - 1);
+		const j = randomInt(i, arr.length - 1, rng);
 		[arr[i], arr[j]] = [arr[j], arr[i]];
 	}
 	return arr.slice(0, k).sort((a, b) => a - b);
+}
+
+/** Deterministic PRNG (mulberry32) — same seed always yields the same sequence. */
+export function mulberry32(seed: number): () => number {
+	let a = seed >>> 0;
+	return function () {
+		a |= 0;
+		a = (a + 0x6d2b79f5) | 0;
+		let t = Math.imul(a ^ (a >>> 15), 1 | a);
+		t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+	};
 }
 
 function columnKey(grid: number[][], col: number, rows: number): string {
@@ -117,7 +129,8 @@ export function randomRrefMatrix(
 	cols: number,
 	rank: number,
 	maxAbsValue: number,
-	allowRepeatedColumns = false
+	allowRepeatedColumns = false,
+	rng: () => number = Math.random
 ): Matrix {
 	if (!Number.isInteger(rows) || rows < 1) throw new Error('rows must be a positive integer');
 	if (!Number.isInteger(cols) || cols < 1) throw new Error('cols must be a positive integer');
@@ -139,7 +152,7 @@ export function randomRrefMatrix(
 	// Column 0 must always be a pivot column: otherwise every column to its left
 	// would be forced to zero in every row, producing a forbidden zero column.
 	const remainingPool = Array.from({ length: cols - 1 }, (_, i) => i + 1);
-	const pivotCols = [0, ...sampleDistinctSorted(remainingPool, rank - 1)];
+	const pivotCols = [0, ...sampleDistinctSorted(remainingPool, rank - 1, rng)];
 	const pivotColSet = new Set(pivotCols);
 
 	const grid: number[][] = Array.from({ length: rows }, () => Array(cols).fill(0));
@@ -158,10 +171,10 @@ export function randomRrefMatrix(
 		let attempt = 0;
 		let key: string;
 		do {
-			for (const i of candidateRows) grid[i][j] = randomInt(-maxAbsValue, maxAbsValue);
+			for (const i of candidateRows) grid[i][j] = randomInt(-maxAbsValue, maxAbsValue, rng);
 			if (candidateRows.every((i) => grid[i][j] === 0)) {
-				const forced = candidateRows[randomInt(0, candidateRows.length - 1)];
-				grid[forced][j] = randomNonZeroInt(maxAbsValue);
+				const forced = candidateRows[randomInt(0, candidateRows.length - 1, rng)];
+				grid[forced][j] = randomNonZeroInt(maxAbsValue, rng);
 			}
 			key = columnKey(grid, j, rows);
 			attempt++;
@@ -192,10 +205,10 @@ export function addScaledRow(m: Matrix, target: number, source: number, scalar: 
 	return result;
 }
 
-function randomDistinctPair(n: number): [number, number] {
-	const a = randomInt(0, n - 1);
-	let b = randomInt(0, n - 1);
-	while (b === a) b = randomInt(0, n - 1);
+function randomDistinctPair(n: number, rng: () => number = Math.random): [number, number] {
+	const a = randomInt(0, n - 1, rng);
+	let b = randomInt(0, n - 1, rng);
+	while (b === a) b = randomInt(0, n - 1, rng);
 	return [a, b];
 }
 
@@ -215,7 +228,11 @@ const ROW_OP_MAX_CELL_ABS_VALUE = 15;
  * exceeds ROW_OP_MAX_CELL_ABS_VALUE in absolute value (best effort, capped, in case
  * no candidate op satisfies both, e.g. an all-zero matrix or an already-oversized cell).
  */
-export function randomRowOperation(m: Matrix, maxAbsScalar: number): Matrix {
+export function randomRowOperation(
+	m: Matrix,
+	maxAbsScalar: number,
+	rng: () => number = Math.random
+): Matrix {
 	const rows = m.length;
 	const kinds: Array<'swap' | 'scale' | 'addScaled'> = ['scale'];
 	if (rows >= 2) kinds.push('swap', 'swap', 'addScaled', 'addScaled', 'addScaled', 'addScaled');
@@ -223,21 +240,21 @@ export function randomRowOperation(m: Matrix, maxAbsScalar: number): Matrix {
 	const MAX_ATTEMPTS = 50;
 	let result = m;
 	for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-		const kind = kinds[randomInt(0, kinds.length - 1)];
+		const kind = kinds[randomInt(0, kinds.length - 1, rng)];
 		switch (kind) {
 			case 'swap': {
-				const [r1, r2] = randomDistinctPair(rows);
+				const [r1, r2] = randomDistinctPair(rows, rng);
 				result = swapRows(m, r1, r2);
 				break;
 			}
 			case 'scale': {
-				const r = randomInt(0, rows - 1);
-				result = scaleRow(m, r, new Fraction(randomNonZeroInt(maxAbsScalar)));
+				const r = randomInt(0, rows - 1, rng);
+				result = scaleRow(m, r, new Fraction(randomNonZeroInt(maxAbsScalar, rng)));
 				break;
 			}
 			case 'addScaled': {
-				const [target, source] = randomDistinctPair(rows);
-				result = addScaledRow(m, target, source, new Fraction(randomNonZeroInt(maxAbsScalar)));
+				const [target, source] = randomDistinctPair(rows, rng);
+				result = addScaledRow(m, target, source, new Fraction(randomNonZeroInt(maxAbsScalar, rng)));
 				break;
 			}
 		}
@@ -312,6 +329,40 @@ export function generateSkillTestMatrix(): Matrix {
 		}
 		if (!hasZeroCell(matrix)) return matrix;
 	}
+}
+
+// Sept 1, 2026
+const REFFLE_EPOCH = { year: 2026, month: 8, date: 1 };
+
+/** Days past the reffle epoch, using the local calendar date. */
+export function reffleId(now: Date = new Date()): number {
+	const epoch = new Date(REFFLE_EPOCH.year, REFFLE_EPOCH.month, REFFLE_EPOCH.date);
+	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+	return Math.round((today.getTime() - epoch.getTime()) / 86_400_000);
+}
+
+const REFFLE_ROWS = 6;
+const REFFLE_COLS = 5;
+const REFFLE_RANK = 3;
+const REFFLE_RANDOM_MATRIX_MAX_ABS_VALUE = 9; // matches SKILL_TEST_RANDOM_MATRIX_MAX_ABS_VALUE
+const REFFLE_ROW_OP_MAX_ABS_SCALAR = 3; // matches SKILL_TEST_ROW_OP_MAX_ABS_SCALAR
+const REFFLE_ROW_OPS = 10;
+
+/** Deterministic 6x5, rank-3 RREF matrix scrambled by exactly 10 row ops, seeded by id. */
+export function generateReffleMatrix(id: number): Matrix {
+	const rng = mulberry32(id);
+	let matrix = randomRrefMatrix(
+		REFFLE_ROWS,
+		REFFLE_COLS,
+		REFFLE_RANK,
+		REFFLE_RANDOM_MATRIX_MAX_ABS_VALUE,
+		false,
+		rng
+	);
+	for (let i = 0; i < REFFLE_ROW_OPS; i++) {
+		matrix = randomRowOperation(matrix, REFFLE_ROW_OP_MAX_ABS_SCALAR, rng);
+	}
+	return matrix;
 }
 
 export function describeSwapCols(c1: number, c2: number): string {
