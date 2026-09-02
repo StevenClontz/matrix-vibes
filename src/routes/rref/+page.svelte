@@ -2,6 +2,7 @@
 	import MatrixView from '$lib/MatrixView.svelte';
 	import StudentInfoModal from '$lib/StudentInfoModal.svelte';
 	import AlertModal from '$lib/AlertModal.svelte';
+	import ConfirmModal from '$lib/ConfirmModal.svelte';
 	import { generateSkillTestMatrix, isRref, pivotCellKeys, type Matrix } from '$lib/matrix';
 
 	const MAX_WRONG_ATTEMPTS = 3;
@@ -16,8 +17,9 @@
 	let wrongAttempts = $state(0);
 	let isPracticeMode = $state(false);
 	let submittedAt = $state<Date | null>(null);
+	let alertTitle: string | null = $state(null);
 	let alertMessage: string | null = $state(null);
-	let alertReloadOnClose = $state(false);
+	let showResetConfirm = $state(false);
 
 	function handleSubmit(name: string, instructor: string) {
 		studentName = name;
@@ -48,14 +50,31 @@
 			return;
 		}
 		wrongAttempts += 1;
+		if (isPracticeMode) {
+			alertTitle = "Incorrect Submission"
+		} else {
+			alertTitle = `Incorrect Submission (${MAX_WRONG_ATTEMPTS-wrongAttempts}/${MAX_WRONG_ATTEMPTS} attempts remain)`
+		}
 		if (!isPracticeMode && wrongAttempts >= MAX_WRONG_ATTEMPTS) {
 			alertMessage =
-				"You've used all 3 attempts without a correct answer. You'll need to reattempt the test — the page will now reload with a new matrix.";
-			alertReloadOnClose = true;
+				`Sorry, you've used all your ${MAX_WRONG_ATTEMPTS} attempts without a correct answer. Keep working on this matrix in Practice Mode, then reset to try again with a new matrix!`;
+			isPracticeMode = true;
 			return;
 		}
 		alertMessage =
 			'Not quite — double-check that your matrix satisfies all the properties of RREF, and that every pivot (and no non-pivot) is marked.';
+	}
+
+	function handleReset() {
+		started = false;
+		claimResult = null;
+		matrix = [];
+		markedCells = new Set();
+		steps = 0;
+		wrongAttempts = 0;
+		isPracticeMode = false;
+		submittedAt = null;
+		showResetConfirm = false;
 	}
 </script>
 
@@ -69,6 +88,12 @@
 			{#if !isPracticeMode}
 				<p class="text-sm text-slate-600">Completed on: {(submittedAt as Date).toLocaleString()}</p>
 			{/if}
+			<button
+				onclick={() => (showResetConfirm = true)}
+				class="rounded-md px-4 py-1.5 font-medium text-slate-500 transition-colors hover:bg-slate-200"
+			>
+				Reset
+			</button>
 		{:else}
 			<p class="text-sm text-slate-800">
 				Use the controls below to manipulate the given matrix into reduced
@@ -83,16 +108,24 @@
 					· Attempts remaining: {MAX_WRONG_ATTEMPTS-wrongAttempts}/{MAX_WRONG_ATTEMPTS}
 				{/if}
 			</p>
-			<button
-				onclick={claimFinished}
-				class="rounded-md bg-sky-600 px-4 py-2 font-medium text-white transition-colors hover:bg-sky-700"
-			>
-				{#if isPracticeMode}
-					Check if matrix is RREF
-				{:else}
-					Submit matrix as RREF
-				{/if}
-			</button>
+			<div class="flex items-center gap-3">
+				<button
+					onclick={claimFinished}
+					class="rounded-md bg-sky-600 px-4 py-2 font-medium text-white transition-colors hover:bg-sky-700"
+				>
+					{#if isPracticeMode}
+						Check if matrix is RREF
+					{:else}
+						Submit matrix as RREF
+					{/if}
+				</button>
+				<button
+					onclick={() => (showResetConfirm = true)}
+					class="rounded-md px-4 py-2 font-medium text-slate-500 transition-colors hover:bg-slate-200"
+				>
+					Reset
+				</button>
+			</div>
 		{/if}
 		<MatrixView bind:matrix bind:markedCells bind:steps disableColOps hideControls={claimResult === 'success'} />
 	{/if}
@@ -102,15 +135,22 @@
 	<StudentInfoModal onsubmit={handleSubmit} onpractice={handlePractice} />
 {/if}
 
-{#if alertMessage}
+{#if alertMessage && alertTitle}
 	<AlertModal
-		title="Incorrect Submission"
+		title={alertTitle}
 		message={alertMessage}
 		onclose={() => {
-			const shouldReload = alertReloadOnClose;
 			alertMessage = null;
-			alertReloadOnClose = false;
-			if (shouldReload) location.reload();
 		}}
+	/>
+{/if}
+
+{#if showResetConfirm}
+	<ConfirmModal
+		title="Reset attempt?"
+		message="This will discard your current progress and generate a new matrix. This can't be undone."
+		confirmLabel="Reset"
+		oncancel={() => (showResetConfirm = false)}
+		onconfirm={handleReset}
 	/>
 {/if}
