@@ -132,7 +132,12 @@
 </main>
 
 {#if !started}
-	<StudentInfoModal onsubmit={handleSubmit} onpractice={handlePractice} />
+	<StudentInfoModal
+		onsubmit={handleSubmit}
+		onpractice={handlePractice}
+		initialName={studentName === 'PRACTICE' ? '' : studentName}
+		initialInstructor={instructorName === 'PRACTICE' ? '' : instructorName}
+	/>
 {/if}
 
 {#if alertMessage && alertTitle}

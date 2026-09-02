@@ -1,14 +1,18 @@
 <script lang="ts">
 	let {
 		onsubmit,
-		onpractice
+		onpractice,
+		initialName = '',
+		initialInstructor = ''
 	}: {
 		onsubmit: (name: string, instructor: string) => void;
 		onpractice: () => void;
+		initialName?: string;
+		initialInstructor?: string;
 	} = $props();
 
-	let name = $state('');
-	let instructor = $state('');
+	let name = $state(initialName);
+	let instructor = $state(initialInstructor);
 
 	function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
