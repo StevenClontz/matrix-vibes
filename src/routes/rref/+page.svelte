@@ -82,10 +82,10 @@
 	<h1 class="text-2xl font-bold text-slate-800">RREF Skill Test</h1>
 	{#if started}
 		{#if claimResult === 'success'}
-			<h2 id="rref-result-title" class="text-lg font-bold text-emerald-700">RREF Found!</h2>
-			<p class="text-sm text-slate-800">Name: {studentName} · Instructor: {instructorName}</p>
+			<h2 id="rref-result-title" class="text-xl font-bold text-sky-700">RREF Found! 🎉</h2>
 			<p class="text-sm text-slate-600">Attempts: {wrongAttempts + 1} · Steps: {steps}</p>
 			{#if !isPracticeMode}
+				<p class="text-sm text-slate-800">Name: {studentName} · Instructor: {instructorName}</p>
 				<p class="text-sm text-slate-600">Completed on: {(submittedAt as Date).toLocaleString()}</p>
 			{/if}
 			<button
