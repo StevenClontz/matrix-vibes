@@ -658,20 +658,17 @@
 		</button>
 	</div>
 	<div class="flex items-center justify-center gap-3 my-2">
-		{#if scaleFactorSliderValue === scaleSliderMin}
-			<button
-				type="button"
-				onclick={() => {
-					scaleSliderMin -= 10;
-					scaleFactor = new Fraction(scaleSliderMin);
-					scaleFactorText = String(scaleSliderMin);
-				}}
-				aria-label="Extend range down by 10"
-				class="cursor-pointer border border-violet-200 rounded-md px-2 py-1 text-sm font-medium text-violet-400 transition-colors hover:bg-violet-100"
-			>
-				−10
-			</button>
-		{/if}
+		<button
+			type="button"
+			onclick={() => {
+				scaleFactor = scaleFactor.round().add(-1);
+				scaleFactorText = String(scaleFactor);
+			}}
+			aria-label="Extend range down by 10"
+			class="cursor-pointer border border-violet-200 rounded-md px-2 py-1 text-sm font-medium text-violet-400 transition-colors hover:bg-violet-100"
+		>
+			−
+		</button>
 		<input
 			type="range"
 			min={scaleSliderMin}
@@ -686,20 +683,17 @@
 			aria-label="Scaling factor slider"
 			class="w-64 accent-violet-600"
 		/>
-		{#if scaleFactorSliderValue === scaleSliderMax}
-			<button
-				type="button"
-				onclick={() => {
-					scaleSliderMax += 10;
-					scaleFactor = new Fraction(scaleSliderMax);
-					scaleFactorText = String(scaleSliderMax);
-				}}
-				aria-label="Extend range up by 10"
-				class="cursor-pointer border border-violet-200 rounded-md px-2 py-1 text-sm font-medium text-violet-400 transition-colors hover:bg-violet-100"
-			>
-				+10
-			</button>
-		{/if}
+		<button
+			type="button"
+			onclick={() => {
+				scaleFactor = scaleFactor.round().add(1);
+				scaleFactorText = String(scaleFactor);
+			}}
+			aria-label="Extend range up by 10"
+			class="cursor-pointer border border-violet-200 rounded-md px-2 py-1 text-sm font-medium text-violet-400 transition-colors hover:bg-violet-100"
+		>
+			+
+		</button>
 	</div>
 {/snippet}
 
