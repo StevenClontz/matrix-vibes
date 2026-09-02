@@ -53,15 +53,12 @@
 	let scaleFactorText = $state('1');
 	let scaleFactorValid = $derived(parseRational(scaleFactorText) !== null);
 	let scaleFactorIsZero = $derived(scaleFactorValid && scaleFactor.equals(0));
-	let scaleFactorMaxMagnitude = $derived.by(() => {
-		let maxAbs = 0;
-		for (const row of matrix) for (const v of row) maxAbs = Math.max(maxAbs, v.abs().valueOf());
-		return Math.max(10, Math.ceil(maxAbs));
-	});
+	let scaleSliderMin = $state(-10);
+	let scaleSliderMax = $state(10);
 	let scaleFactorSliderValue = $derived.by(() => {
 		if (!scaleFactorValid) return 0;
 		const n = Math.round(scaleFactor.valueOf());
-		return Math.max(-scaleFactorMaxMagnitude, Math.min(scaleFactorMaxMagnitude, n));
+		return Math.max(scaleSliderMin, Math.min(scaleSliderMax, n));
 	});
 
 	let hoveredRow = $state<number | null>(null);
@@ -228,8 +225,7 @@
 					selectedRow = null;
 					selectedCol = null;
 					dropMode = 'combine';
-					scaleFactor = new Fraction(0);
-					scaleFactorText = '0';
+					resetScaleFactor(0);
 					dropAction = { kind: current.kind, source, target };
 				}
 			})
@@ -248,6 +244,13 @@
 		};
 	}
 
+	function resetScaleFactor(n: number) {
+		scaleFactor = new Fraction(n);
+		scaleFactorText = String(n);
+		scaleSliderMin = -10;
+		scaleSliderMax = 10;
+	}
+
 	function selectRow(i: number) {
 		if (disableRowOps) return;
 		if (selectedRow === i) {
@@ -255,8 +258,7 @@
 		} else {
 			selectedRow = i;
 			selectedCol = null;
-			scaleFactor = new Fraction(1);
-			scaleFactorText = '1';
+			resetScaleFactor(1);
 			dropAction = null;
 		}
 	}
@@ -268,8 +270,7 @@
 		} else {
 			selectedCol = j;
 			selectedRow = null;
-			scaleFactor = new Fraction(1);
-			scaleFactorText = '1';
+			resetScaleFactor(1);
 			dropAction = null;
 		}
 	}
@@ -289,15 +290,13 @@
 			history = [...history, { matrix, opLatex }];
 			steps += 1;
 		}
-		scaleFactor = new Fraction(1);
-		scaleFactorText = '1';
+		resetScaleFactor(1);
 		selectedRow = null;
 		selectedCol = null;
 	}
 
 	function cancelScale() {
-		scaleFactor = new Fraction(1);
-		scaleFactorText = '1';
+		resetScaleFactor(1);
 		selectedRow = null;
 		selectedCol = null;
 	}
@@ -329,15 +328,13 @@
 		}
 		dropAction = null;
 		dropMode = 'combine';
-		scaleFactor = new Fraction(0);
-		scaleFactorText = '0';
+		resetScaleFactor(0);
 	}
 
 	function cancelDropAction() {
 		dropAction = null;
 		dropMode = 'combine';
-		scaleFactor = new Fraction(0);
-		scaleFactorText = '0';
+		resetScaleFactor(0);
 	}
 
 	function undo() {
@@ -661,10 +658,24 @@
 		</button>
 	</div>
 	<div class="flex items-center justify-center gap-3 my-2">
+		{#if scaleFactorSliderValue === scaleSliderMin}
+			<button
+				type="button"
+				onclick={() => {
+					scaleSliderMin -= 10;
+					scaleFactor = new Fraction(scaleSliderMin);
+					scaleFactorText = String(scaleSliderMin);
+				}}
+				aria-label="Extend range down by 10"
+				class="cursor-pointer border border-violet-200 rounded-md px-2 py-1 text-sm font-medium text-violet-400 transition-colors hover:bg-violet-100"
+			>
+				−10
+			</button>
+		{/if}
 		<input
 			type="range"
-			min={-scaleFactorMaxMagnitude}
-			max={scaleFactorMaxMagnitude}
+			min={scaleSliderMin}
+			max={scaleSliderMax}
 			step="1"
 			value={scaleFactorSliderValue}
 			oninput={(e) => {
@@ -675,6 +686,20 @@
 			aria-label="Scaling factor slider"
 			class="w-64 accent-violet-600"
 		/>
+		{#if scaleFactorSliderValue === scaleSliderMax}
+			<button
+				type="button"
+				onclick={() => {
+					scaleSliderMax += 10;
+					scaleFactor = new Fraction(scaleSliderMax);
+					scaleFactorText = String(scaleSliderMax);
+				}}
+				aria-label="Extend range up by 10"
+				class="cursor-pointer border border-violet-200 rounded-md px-2 py-1 text-sm font-medium text-violet-400 transition-colors hover:bg-violet-100"
+			>
+				+10
+			</button>
+		{/if}
 	</div>
 {/snippet}
 
