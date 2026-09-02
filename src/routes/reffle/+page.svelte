@@ -44,7 +44,7 @@
 </script>
 
 <main class="flex min-h-screen flex-col items-center gap-4 bg-slate-50 p-10 pb-0">
-	<h1 class="text-2xl font-bold text-slate-800">Reffle #{id}</h1>
+	<h1 class="text-2xl font-bold text-slate-800">REFF-le #{id}</h1>
 	{#if claimResult === 'success'}
 		<h2 class="text-xl font-bold text-sky-700">RREF Found! 🎉</h2>
 		<p class="text-sm text-slate-600">Attempts: {attempts} · Steps: {steps}</p>
@@ -65,7 +65,7 @@
 				onclick={claimFinished}
 				class="rounded-md bg-sky-600 px-4 py-2 font-medium text-white transition-colors hover:bg-sky-700"
 			>
-				Check if matrix is RREF
+				RREF-le?
 			</button>
 			<button
 				onclick={() => (showResetConfirm = true)}
