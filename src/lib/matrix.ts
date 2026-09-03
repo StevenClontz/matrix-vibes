@@ -348,7 +348,7 @@ const REFFLE_COLS = 5;
 const REFFLE_RANK = 3;
 const REFFLE_RANDOM_MATRIX_MAX_ABS_VALUE = 9; // matches SKILL_TEST_RANDOM_MATRIX_MAX_ABS_VALUE
 const REFFLE_ROW_OP_MAX_ABS_SCALAR = 3; // matches SKILL_TEST_ROW_OP_MAX_ABS_SCALAR
-const REFFLE_ROW_OPS = 10;
+const REFFLE_ROW_OPS = 20;
 
 /** Deterministic 6x5, rank-3 RREF matrix scrambled by exactly 10 row ops, seeded by id. */
 export function generateReffleMatrix(id: number): Matrix {
