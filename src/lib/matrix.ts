@@ -332,7 +332,7 @@ export function generateSkillTestMatrix(): Matrix {
 }
 
 // Sept 1, 2026
-const REFFLE_EPOCH = { year: 2026, month: 8, date: 1 };
+const REFFLE_EPOCH = { year: 2026, month: 8, date: 2 };
 
 /** Days past the reffle epoch, using the UTC calendar date. UTC (not local
  *  time) keeps this consistent between SSR and client hydration regardless
