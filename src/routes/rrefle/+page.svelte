@@ -115,7 +115,7 @@
 	{:else}
 		<button
 			onclick={() => (showInstructions = true)}
-			class="cursor-pointer rounded-md px-4 py-1.5 font-medium text-slate-500 transition-colors hover:bg-slate-200"
+			class="cursor-pointer rounded-md px-4 py-1.5 font-medium border border-blue-200 text-blue-500 transition-colors hover:bg-sky-200"
 		>
 			Instructions
 		</button>
@@ -161,7 +161,11 @@
 {#if showInstructions}
 	<AlertModal
 		title="Instructions"
-		message={`Your goal in this puzzle is to create three "pivots" on the first three rows. Every pivot must have the value 1, and be to the right of each higher pivot. Additionally, any numbers to the left, above, or below a pivot must be zero, and all numbers on the bottom three rows must be zero. When you've satisfied these conditions, click each pivot to mark it, and then solve the puzzle by clicking the "Claim your RREF-le!" button!`}
+		message={[
+			`Your goal in this puzzle is to create three "pivot numbers" on the first three rows. Every pivot must have the value 1, and be to the right of each higher pivot.`,
+			`Additionally, any numbers to the left, above, or below a pivot must be zero, and all numbers on the bottom three rows must be zero.`,
+			`When you've satisfied these conditions, click each pivot to mark it, and then solve the puzzle by clicking the "Claim your RREF-le!" button!`
+		]}
 		onclose={() => (showInstructions = false)}
 	/>
 {/if}

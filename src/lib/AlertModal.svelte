@@ -5,9 +5,11 @@
 		onclose
 	}: {
 		title: string;
-		message: string;
+		message: string | string[];
 		onclose: () => void;
 	} = $props();
+
+	let paragraphs = $derived(Array.isArray(message) ? message : [message]);
 </script>
 
 <svelte:window
@@ -30,7 +32,11 @@
 		aria-labelledby="alert-modal-title"
 	>
 		<h2 id="alert-modal-title" class="text-lg font-bold text-slate-800">{title}</h2>
-		<p class="text-sm text-slate-600">{message}</p>
+		<div class="flex flex-col gap-2">
+			{#each paragraphs as paragraph}
+				<p class="text-sm text-slate-600">{paragraph}</p>
+			{/each}
+		</div>
 		<div class="flex justify-center border-t border-slate-200 pt-4">
 			<button
 				onclick={onclose}
