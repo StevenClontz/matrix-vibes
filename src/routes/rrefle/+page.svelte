@@ -83,7 +83,6 @@
 	<h1 class="text-2xl font-bold text-slate-800">RREF-le #{id}</h1>
 	{#if claimResult === 'success'}
 		<h2 class="text-xl font-bold text-sky-700">RREF Found! 🎉</h2>
-		<p class="text-sm text-slate-600">Steps: {steps}</p>
 		<textarea
 			readonly
 			onclick={(e) => e.currentTarget.select()}
@@ -119,7 +118,6 @@
 		>
 			Instructions
 		</button>
-		<p class="text-sm text-slate-600">Steps: {steps}</p>
 		<div class="flex items-center gap-3">
 			<button
 				onclick={claimFinished}
