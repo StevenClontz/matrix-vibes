@@ -332,44 +332,44 @@ export function generateSkillTestMatrix(): Matrix {
 }
 
 // Sept 1, 2026
-const REFFLE_EPOCH = { year: 2026, month: 8, date: 2 };
+const RREFLE_EPOCH = { year: 2026, month: 8, date: 2 };
 
-/** Days past the reffle epoch, using the UTC calendar date. UTC (not local
+/** Days past the rrefle epoch, using the UTC calendar date. UTC (not local
  *  time) keeps this consistent between SSR and client hydration regardless
  *  of the server's or visitor's timezone. */
-export function reffleId(now: Date = new Date()): number {
-	const epochUTC = Date.UTC(REFFLE_EPOCH.year, REFFLE_EPOCH.month, REFFLE_EPOCH.date);
+export function rrefleId(now: Date = new Date()): number {
+	const epochUTC = Date.UTC(RREFLE_EPOCH.year, RREFLE_EPOCH.month, RREFLE_EPOCH.date);
 	const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
 	return Math.round((todayUTC - epochUTC) / 86_400_000);
 }
 
-const REFFLE_ROWS = 6;
-const REFFLE_COLS = 5;
-const REFFLE_RANK = 3;
-const REFFLE_RANDOM_MATRIX_MAX_ABS_VALUE = 9; // matches SKILL_TEST_RANDOM_MATRIX_MAX_ABS_VALUE
-const REFFLE_ROW_OP_MAX_ABS_SCALAR = 3; // matches SKILL_TEST_ROW_OP_MAX_ABS_SCALAR
-const REFFLE_ROW_OPS = 20;
+const RREFLE_ROWS = 6;
+const RREFLE_COLS = 5;
+const RREFLE_RANK = 3;
+const RREFLE_RANDOM_MATRIX_MAX_ABS_VALUE = 9; // matches SKILL_TEST_RANDOM_MATRIX_MAX_ABS_VALUE
+const RREFLE_ROW_OP_MAX_ABS_SCALAR = 3; // matches SKILL_TEST_ROW_OP_MAX_ABS_SCALAR
+const RREFLE_ROW_OPS = 20;
 
 /** Deterministic 6x5, rank-3 RREF matrix scrambled by exactly 10 row ops, seeded by id. */
-export function generateReffleMatrix(id: number): Matrix {
+export function generateRrefleMatrix(id: number): Matrix {
 	const rng = mulberry32(id);
 	let matrix = randomRrefMatrix(
-		REFFLE_ROWS,
-		REFFLE_COLS,
-		REFFLE_RANK,
-		REFFLE_RANDOM_MATRIX_MAX_ABS_VALUE,
+		RREFLE_ROWS,
+		RREFLE_COLS,
+		RREFLE_RANK,
+		RREFLE_RANDOM_MATRIX_MAX_ABS_VALUE,
 		false,
 		rng
 	);
-	for (let i = 0; i < REFFLE_ROW_OPS; i++) {
-		matrix = randomRowOperation(matrix, REFFLE_ROW_OP_MAX_ABS_SCALAR, rng);
+	for (let i = 0; i < RREFLE_ROW_OPS; i++) {
+		matrix = randomRowOperation(matrix, RREFLE_ROW_OP_MAX_ABS_SCALAR, rng);
 	}
 	return matrix;
 }
 
 /** Wordle-style result grid: one line per pivot row, 🟩 pivot / ⬜ zero / 🟨 other.
  *  Only meaningful once isRref(matrix) is true. */
-export function reffleEmojiGrid(matrix: Matrix): string {
+export function rrefleEmojiGrid(matrix: Matrix): string {
 	const pivots = pivotCellKeys(matrix);
 	const lines: string[] = [];
 	matrix.forEach((row, i) => {
@@ -381,9 +381,9 @@ export function reffleEmojiGrid(matrix: Matrix): string {
 	return lines.join('\n');
 }
 
-/** Shareable Wordle-style summary of a completed reffle. */
-export function reffleShareText(id: number, matrix: Matrix): string {
-	return `REFF-le #${id}\n\n${reffleEmojiGrid(matrix)}`;
+/** Shareable Wordle-style summary of a completed rrefle. */
+export function rrefleShareText(id: number, matrix: Matrix): string {
+	return `RREF-le #${id}\n\n${rrefleEmojiGrid(matrix)}`;
 }
 
 export function describeSwapCols(c1: number, c2: number): string {

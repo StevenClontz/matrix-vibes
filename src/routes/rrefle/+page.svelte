@@ -3,18 +3,18 @@
 	import AlertModal from '$lib/AlertModal.svelte';
 	import ConfirmModal from '$lib/ConfirmModal.svelte';
 	import {
-		generateReffleMatrix,
-		reffleId,
-		reffleShareText,
+		generateRrefleMatrix,
+		rrefleId,
+		rrefleShareText,
 		isRref,
 		pivotCellKeys,
 		type Matrix
 	} from '$lib/matrix';
 
-	const id = reffleId();
+	const id = rrefleId();
 
 	function freshMatrix(): Matrix {
-		return generateReffleMatrix(id);
+		return generateRrefleMatrix(id);
 	}
 
 	let matrix: Matrix = $state(freshMatrix());
@@ -27,7 +27,7 @@
 	let showResetConfirm = $state(false);
 	let shareFeedback: string | null = $state(null);
 
-	let shareText = $derived(reffleShareText(id, matrix));
+	let shareText = $derived(rrefleShareText(id, matrix));
 
 	async function handleShare() {
 		if (navigator.share) {
@@ -72,7 +72,7 @@
 </script>
 
 <main class="flex min-h-screen flex-col items-center gap-4 bg-slate-50 p-10 pb-0">
-	<h1 class="text-2xl font-bold text-slate-800">REFF-le #{id}</h1>
+	<h1 class="text-2xl font-bold text-slate-800">RREF-le #{id}</h1>
 	{#if claimResult === 'success'}
 		<h2 class="text-xl font-bold text-sky-700">RREF Found! 🎉</h2>
 		<p class="text-sm text-slate-600">Attempts: {attempts} · Steps: {steps}</p>
@@ -131,7 +131,7 @@
 {#if showResetConfirm}
 	<ConfirmModal
 		title="Reset attempt?"
-		message="This will discard your current progress on today's Reffle. This can't be undone."
+		message="This will discard your current progress on today's Rrefle. This can't be undone."
 		confirmLabel="Reset"
 		oncancel={() => (showResetConfirm = false)}
 		onconfirm={handleReset}
