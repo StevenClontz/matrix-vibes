@@ -334,11 +334,13 @@ export function generateSkillTestMatrix(): Matrix {
 // Sept 1, 2026
 const REFFLE_EPOCH = { year: 2026, month: 8, date: 1 };
 
-/** Days past the reffle epoch, using the local calendar date. */
+/** Days past the reffle epoch, using the UTC calendar date. UTC (not local
+ *  time) keeps this consistent between SSR and client hydration regardless
+ *  of the server's or visitor's timezone. */
 export function reffleId(now: Date = new Date()): number {
-	const epoch = new Date(REFFLE_EPOCH.year, REFFLE_EPOCH.month, REFFLE_EPOCH.date);
-	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-	return Math.round((today.getTime() - epoch.getTime()) / 86_400_000);
+	const epochUTC = Date.UTC(REFFLE_EPOCH.year, REFFLE_EPOCH.month, REFFLE_EPOCH.date);
+	const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+	return Math.round((todayUTC - epochUTC) / 86_400_000);
 }
 
 const REFFLE_ROWS = 6;
