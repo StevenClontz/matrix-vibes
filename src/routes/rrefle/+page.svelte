@@ -24,6 +24,7 @@
 	let alertTitle: string | null = $state(null);
 	let alertMessage: string | null = $state(null);
 	let showResetConfirm = $state(false);
+	let showInstructions = $state(false);
 	let shareFeedback: string | null = $state(null);
 
 	let shareText = $derived(rrefleShareText(id, matrix));
@@ -112,10 +113,12 @@
 			<p class="text-sm text-emerald-700">{shareFeedback}</p>
 		{/if}
 	{:else}
-		<p class="text-sm text-slate-800">
-			Use the controls below to manipulate today's matrix into reduced row echelon form, and
-			click the cells to mark each pivot.
-		</p>
+		<button
+			onclick={() => (showInstructions = true)}
+			class="cursor-pointer rounded-md px-4 py-1.5 font-medium text-slate-500 transition-colors hover:bg-slate-200"
+		>
+			Instructions
+		</button>
 		<p class="text-sm text-slate-600">Steps: {steps}</p>
 		<div class="flex items-center gap-3">
 			<button
@@ -152,5 +155,13 @@
 		confirmLabel="Reset"
 		oncancel={() => (showResetConfirm = false)}
 		onconfirm={handleReset}
+	/>
+{/if}
+
+{#if showInstructions}
+	<AlertModal
+		title="Instructions"
+		message={`Your goal in this puzzle is to create three "pivots" on the first three rows. Every pivot must have the value 1, and be to the right of each higher pivot. Additionally, any numbers to the left, above, or below a pivot must be zero, and all numbers on the bottom three rows must be zero. When you've satisfied these conditions, click each pivot to mark it, and then solve the puzzle by clicking the "Claim your RREF-le!" button!`}
+		onclose={() => (showInstructions = false)}
 	/>
 {/if}
