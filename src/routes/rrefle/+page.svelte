@@ -79,6 +79,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>RREF-le! @ Matrix.Clontz.org</title>
+</svelte:head>
+
 <main class="flex min-h-screen flex-col items-center gap-4 bg-slate-50 p-10 pb-0">
 	<h1 class="text-2xl font-bold text-slate-800">RREF-le #{id}</h1>
 	{#if claimResult === 'success'}
