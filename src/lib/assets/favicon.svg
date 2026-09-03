@@ -1,1 +1,54 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="107" height="128" viewBox="0 0 107 128"><title>svelte-logo</title><path d="M94.157 22.819c-10.4-14.885-30.94-19.297-45.792-9.835L22.282 29.608A29.92 29.92 0 0 0 8.764 49.65a31.5 31.5 0 0 0 3.108 20.231 30 30 0 0 0-4.477 11.183 31.9 31.9 0 0 0 5.448 24.116c10.402 14.887 30.942 19.297 45.791 9.835l26.083-16.624A29.92 29.92 0 0 0 98.235 78.35a31.53 31.53 0 0 0-3.105-20.232 30 30 0 0 0 4.474-11.182 31.88 31.88 0 0 0-5.447-24.116" style="fill:#ff3e00"/><path d="M45.817 106.582a20.72 20.72 0 0 1-22.237-8.243 19.17 19.17 0 0 1-3.277-14.503 18 18 0 0 1 .624-2.435l.49-1.498 1.337.981a33.6 33.6 0 0 0 10.203 5.098l.97.294-.09.968a5.85 5.85 0 0 0 1.052 3.878 6.24 6.24 0 0 0 6.695 2.485 5.8 5.8 0 0 0 1.603-.704L69.27 76.28a5.43 5.43 0 0 0 2.45-3.631 5.8 5.8 0 0 0-.987-4.371 6.24 6.24 0 0 0-6.698-2.487 5.7 5.7 0 0 0-1.6.704l-9.953 6.345a19 19 0 0 1-5.296 2.326 20.72 20.72 0 0 1-22.237-8.243 19.17 19.17 0 0 1-3.277-14.502 17.99 17.99 0 0 1 8.13-12.052l26.081-16.623a19 19 0 0 1 5.3-2.329 20.72 20.72 0 0 1 22.237 8.243 19.17 19.17 0 0 1 3.277 14.503 18 18 0 0 1-.624 2.435l-.49 1.498-1.337-.98a33.6 33.6 0 0 0-10.203-5.1l-.97-.294.09-.968a5.86 5.86 0 0 0-1.052-3.878 6.24 6.24 0 0 0-6.696-2.485 5.8 5.8 0 0 0-1.602.704L37.73 51.72a5.42 5.42 0 0 0-2.449 3.63 5.79 5.79 0 0 0 .986 4.372 6.24 6.24 0 0 0 6.698 2.486 5.8 5.8 0 0 0 1.602-.704l9.952-6.342a19 19 0 0 1 5.295-2.328 20.72 20.72 0 0 1 22.237 8.242 19.17 19.17 0 0 1 3.277 14.503 18 18 0 0 1-8.13 12.053l-26.081 16.622a19 19 0 0 1-5.3 2.328" style="fill:#fff"/></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="5.8677783mm"
+   height="3.2777767mm"
+   viewBox="0 0 5.8677783 3.2777767"
+   version="1.1"
+   id="svg5"
+   xml:space="preserve"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
+   sodipodi:docname="favicon.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="8.7585214"
+     inkscape:cx="8.1063911"
+     inkscape:cy="12.730459"
+     inkscape:window-width="1920"
+     inkscape:window-height="1001"
+     inkscape:window-x="-9"
+     inkscape:window-y="1341"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" /><defs
+     id="defs2" /><g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-57.917398,-132.17654)"><g
+       id="g5308"><g
+         aria-label="~"
+         id="g5302"
+         style="font-size:8.46667px;line-height:0.8;font-family:'Lucida Calligraphy';-inkscape-font-specification:'Lucida Calligraphy, Normal';text-align:center;text-anchor:middle;fill:#ffffff;stroke:#ff3e00;stroke-width:1;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+         transform="rotate(19.849876,57.304108,138.88865)"><path
+           d="m 56.560311,133.54973 c 0.12489,-0.47759 0.328096,-0.98696 0.768834,-1.25426 0.285728,-0.16799 0.65032,-0.20218 0.955456,-0.065 0.581915,0.2222 1.070149,0.63333 1.657013,0.84372 0.210287,0.0813 0.464464,0.0757 0.641302,-0.0785 0.213935,-0.17281 0.345134,-0.42264 0.454643,-0.66966 0.08544,0 0.170877,0 0.256315,0 -0.143722,0.47108 -0.367782,0.96994 -0.816956,1.21984 -0.340953,0.19022 -0.76154,0.15688 -1.108056,-4e-4 -0.538031,-0.22908 -1.004077,-0.6015 -1.553378,-0.80649 -0.26155,-0.11123 -0.547369,0.0472 -0.700224,0.26203 -0.128731,0.16511 -0.220573,0.35544 -0.298633,0.54872 -0.08544,0 -0.170877,0 -0.256316,0 z"
+           id="path5300"
+           style="stroke:#ff3e00;stroke-width:1;stroke-dasharray:none;stroke-opacity:1" /></g><g
+         aria-label="~"
+         id="text5199"
+         style="font-size:8.46667px;line-height:0.8;font-family:'Lucida Calligraphy';-inkscape-font-specification:'Lucida Calligraphy, Normal';text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:1.2;stroke-linejoin:round"
+         transform="rotate(19.849876,57.304108,138.88865)"><path
+           d="m 56.560311,133.54973 c 0.12489,-0.47759 0.328096,-0.98696 0.768834,-1.25426 0.285728,-0.16799 0.65032,-0.20218 0.955456,-0.065 0.581915,0.2222 1.070149,0.63333 1.657013,0.84372 0.210287,0.0813 0.464464,0.0757 0.641302,-0.0785 0.213935,-0.17281 0.345134,-0.42264 0.454643,-0.66966 0.08544,0 0.170877,0 0.256315,0 -0.143722,0.47108 -0.367782,0.96994 -0.816956,1.21984 -0.340953,0.19022 -0.76154,0.15688 -1.108056,-4e-4 -0.538031,-0.22908 -1.004077,-0.6015 -1.553378,-0.80649 -0.26155,-0.11123 -0.547369,0.0472 -0.700224,0.26203 -0.128731,0.16511 -0.220573,0.35544 -0.298633,0.54872 -0.08544,0 -0.170877,0 -0.256316,0 z"
+           id="path5201" /></g></g></g></svg>
