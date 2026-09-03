@@ -64,7 +64,6 @@
 	let hoveredRow = $state<number | null>(null);
 	let hoveredCol = $state<number | null>(null);
 
-	let controlPanelEl: HTMLDivElement | undefined;
 	let controlPanelBottomEl: HTMLDivElement | undefined;
 	let controlPanelVisible = $derived(
 		selectedRow !== null || selectedCol !== null || dropAction !== null
