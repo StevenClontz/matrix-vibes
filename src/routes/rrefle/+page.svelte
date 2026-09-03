@@ -65,9 +65,9 @@
 			claimResult = 'success';
 			return;
 		}
-		alertTitle = 'Not quite';
+		alertTitle = 'Keep trying!';
 		alertMessage =
-			'Not quite — double-check that your matrix satisfies all the properties of RREF, and that every pivot (and no non-pivot) is marked.';
+			"You're not quite there! Double-check that your matrix satisfies all the required conditions, and that you've marked exactly three correct pivot numbers.";
 	}
 
 	function handleReset() {
@@ -166,7 +166,7 @@
 		message={[
 			`Your goal in this puzzle is to create three "pivot numbers" on the first three rows. Every pivot must have the value 1, and be to the right of each higher pivot.`,
 			`Additionally, any numbers to the left, above, or below a pivot must be zero, and all numbers on the bottom three rows must be zero.`,
-			`When you've satisfied these conditions, click each pivot to mark it, and then solve the puzzle by clicking the "Claim your RREF-le!" button!`
+			`As you satisfy these conditions, click each pivot to mark it, and finally solve the puzzle by clicking the button to "Claim your RREF-le!"`
 		]}
 		onclose={() => (showInstructions = false)}
 	/>
