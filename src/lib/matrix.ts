@@ -365,6 +365,25 @@ export function generateReffleMatrix(id: number): Matrix {
 	return matrix;
 }
 
+/** Wordle-style result grid: one line per pivot row, 🟩 pivot / ⬜ zero / 🟨 other.
+ *  Only meaningful once isRref(matrix) is true. */
+export function reffleEmojiGrid(matrix: Matrix): string {
+	const pivots = pivotCellKeys(matrix);
+	const lines: string[] = [];
+	matrix.forEach((row, i) => {
+		if (!row.some((_, j) => pivots.has(cellKey(i, j)))) return;
+		lines.push(
+			row.map((v, j) => (pivots.has(cellKey(i, j)) ? '🟩' : v.equals(0) ? '⬜' : '🟨')).join('')
+		);
+	});
+	return lines.join('\n');
+}
+
+/** Shareable Wordle-style summary of a completed reffle. */
+export function reffleShareText(id: number, matrix: Matrix): string {
+	return `REFF-le #${id}\n\n${reffleEmojiGrid(matrix)}`;
+}
+
 export function describeSwapCols(c1: number, c2: number): string {
 	return `C_{${c1 + 1}} \\leftrightarrow C_{${c2 + 1}}`;
 }

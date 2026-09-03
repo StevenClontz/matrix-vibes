@@ -2,7 +2,14 @@
 	import MatrixView from '$lib/MatrixView.svelte';
 	import AlertModal from '$lib/AlertModal.svelte';
 	import ConfirmModal from '$lib/ConfirmModal.svelte';
-	import { generateReffleMatrix, reffleId, isRref, pivotCellKeys, type Matrix } from '$lib/matrix';
+	import {
+		generateReffleMatrix,
+		reffleId,
+		reffleShareText,
+		isRref,
+		pivotCellKeys,
+		type Matrix
+	} from '$lib/matrix';
 
 	const id = reffleId();
 
@@ -18,6 +25,27 @@
 	let alertTitle: string | null = $state(null);
 	let alertMessage: string | null = $state(null);
 	let showResetConfirm = $state(false);
+	let shareFeedback: string | null = $state(null);
+
+	let shareText = $derived(reffleShareText(id, matrix));
+
+	async function handleShare() {
+		if (navigator.share) {
+			try {
+				await navigator.share({ text: shareText });
+				return;
+			} catch (err) {
+				if ((err as Error)?.name === 'AbortError') return;
+			}
+		}
+		try {
+			await navigator.clipboard.writeText(shareText);
+			shareFeedback = 'Copied to clipboard!';
+		} catch {
+			shareFeedback = 'Could not copy — please copy manually.';
+		}
+		setTimeout(() => (shareFeedback = null), 2000);
+	}
 
 	function claimFinished() {
 		const truePivots = pivotCellKeys(matrix);
@@ -48,12 +76,24 @@
 	{#if claimResult === 'success'}
 		<h2 class="text-xl font-bold text-sky-700">RREF Found! 🎉</h2>
 		<p class="text-sm text-slate-600">Attempts: {attempts} · Steps: {steps}</p>
-		<button
-			onclick={() => (showResetConfirm = true)}
-			class="rounded-md px-4 py-1.5 font-medium text-slate-500 transition-colors hover:bg-slate-200"
-		>
-			Reset
-		</button>
+		<pre class="whitespace-pre text-center text-2xl leading-tight">{shareText}</pre>
+		<div class="flex items-center gap-3">
+			<button
+				onclick={handleShare}
+				class="rounded-md bg-emerald-600 px-4 py-1.5 font-medium text-white transition-colors hover:bg-emerald-700"
+			>
+				Share Results
+			</button>
+			<button
+				onclick={() => (showResetConfirm = true)}
+				class="rounded-md px-4 py-1.5 font-medium text-slate-500 transition-colors hover:bg-slate-200"
+			>
+				Reset
+			</button>
+		</div>
+		{#if shareFeedback}
+			<p class="text-sm text-emerald-700">{shareFeedback}</p>
+		{/if}
 	{:else}
 		<p class="text-sm text-slate-800">
 			Use the controls below to manipulate today's matrix into reduced row echelon form, and
