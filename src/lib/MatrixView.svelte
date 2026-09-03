@@ -597,7 +597,6 @@
 	submitDisabled: boolean = false
 )}
 	<div
-		bind:this={controlPanelEl}
 		class="mt-3 flex flex-col border-t border-slate-200 pt-3 text-sm text-slate-600"
 	>
 		<div class="text-slate-700">
