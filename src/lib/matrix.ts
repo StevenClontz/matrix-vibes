@@ -348,7 +348,7 @@ const RREFLE_COLS = 5;
 const RREFLE_RANK = 3;
 const RREFLE_RANDOM_MATRIX_MAX_ABS_VALUE = 9; // matches SKILL_TEST_RANDOM_MATRIX_MAX_ABS_VALUE
 const RREFLE_ROW_OP_MAX_ABS_SCALAR = 3; // matches SKILL_TEST_ROW_OP_MAX_ABS_SCALAR
-const RREFLE_ROW_OPS = 20;
+const RREFLE_ROW_OPS = 30;
 
 /** Deterministic 6x5, rank-3 RREF matrix scrambled by exactly 10 row ops, seeded by id. */
 export function generateRrefleMatrix(id: number): Matrix {
@@ -367,7 +367,7 @@ export function generateRrefleMatrix(id: number): Matrix {
 	return matrix;
 }
 
-/** Wordle-style result grid: one line per pivot row, 🟩 pivot / ⬜ zero / 🟨 other.
+/** Wordle-style result grid: one line per pivot row, 🟩 pivot / 🟨 zero / ⬜ other.
  *  Only meaningful once isRref(matrix) is true. */
 export function rrefleEmojiGrid(matrix: Matrix): string {
 	const pivots = pivotCellKeys(matrix);
@@ -375,7 +375,7 @@ export function rrefleEmojiGrid(matrix: Matrix): string {
 	matrix.forEach((row, i) => {
 		if (!row.some((_, j) => pivots.has(cellKey(i, j)))) return;
 		lines.push(
-			row.map((v, j) => (pivots.has(cellKey(i, j)) ? '🟩' : v.equals(0) ? '⬜' : '🟨')).join('')
+			row.map((v, j) => (pivots.has(cellKey(i, j)) ? '🟩' : v.equals(0) ? '🟨' : '⬜')).join('')
 		);
 	});
 	return lines.join('\n');
@@ -383,7 +383,7 @@ export function rrefleEmojiGrid(matrix: Matrix): string {
 
 /** Shareable Wordle-style summary of a completed rrefle. */
 export function rrefleShareText(id: number, matrix: Matrix): string {
-	return `RREF-le #${id}\n\n${rrefleEmojiGrid(matrix)}`;
+	return `RREF-le #${id}\n\n${rrefleEmojiGrid(matrix)}\n\nmatrix.clontz.org/rrefle`;
 }
 
 export function describeSwapCols(c1: number, c2: number): string {

@@ -20,7 +20,6 @@
 	let matrix: Matrix = $state(freshMatrix());
 	let markedCells: Set<string> = $state(new Set());
 	let steps = $state(0);
-	let attempts = $state(0);
 	let claimResult = $state<'success' | null>(null);
 	let alertTitle: string | null = $state(null);
 	let alertMessage: string | null = $state(null);
@@ -47,11 +46,20 @@
 		setTimeout(() => (shareFeedback = null), 2000);
 	}
 
+	async function handleCopy() {
+		try {
+			await navigator.clipboard.writeText(shareText);
+			shareFeedback = 'Copied to clipboard!';
+		} catch {
+			shareFeedback = 'Could not copy — please copy manually.';
+		}
+		setTimeout(() => (shareFeedback = null), 2000);
+	}
+
 	function claimFinished() {
 		const truePivots = pivotCellKeys(matrix);
 		const pivotsMatch =
 			truePivots.size === markedCells.size && [...truePivots].every((k) => markedCells.has(k));
-		attempts += 1;
 		if (isRref(matrix) && pivotsMatch) {
 			claimResult = 'success';
 			return;
@@ -65,7 +73,6 @@
 		matrix = freshMatrix();
 		markedCells = new Set();
 		steps = 0;
-		attempts = 0;
 		claimResult = null;
 		showResetConfirm = false;
 	}
@@ -75,14 +82,24 @@
 	<h1 class="text-2xl font-bold text-slate-800">RREF-le #{id}</h1>
 	{#if claimResult === 'success'}
 		<h2 class="text-xl font-bold text-sky-700">RREF Found! 🎉</h2>
-		<p class="text-sm text-slate-600">Attempts: {attempts} · Steps: {steps}</p>
-		<pre class="whitespace-pre text-center text-2xl leading-tight">{shareText}</pre>
+		<p class="text-sm text-slate-600">Steps: {steps}</p>
+		<textarea
+			readonly
+			onclick={(e) => e.currentTarget.select()}
+			class="text-lg w-80 h-54 border-slate-500 border rounded-sm p-2">{shareText}</textarea
+		>
 		<div class="flex items-center gap-3">
 			<button
 				onclick={handleShare}
 				class="rounded-md bg-emerald-600 px-4 py-1.5 font-medium text-white transition-colors hover:bg-emerald-700"
 			>
 				Share Results
+			</button>
+			<button
+				onclick={handleCopy}
+				class="rounded-md bg-sky-600 px-4 py-1.5 font-medium text-white transition-colors hover:bg-sky-700"
+			>
+				Copy Results
 			</button>
 			<button
 				onclick={() => (showResetConfirm = true)}
@@ -99,17 +116,17 @@
 			Use the controls below to manipulate today's matrix into reduced row echelon form, and
 			click the cells to mark each pivot.
 		</p>
-		<p class="text-sm text-slate-600">Attempts: {attempts} · Steps: {steps}</p>
+		<p class="text-sm text-slate-600">Steps: {steps}</p>
 		<div class="flex items-center gap-3">
 			<button
 				onclick={claimFinished}
-				class="rounded-md bg-sky-600 px-4 py-2 font-medium text-white transition-colors hover:bg-sky-700"
+				class="cursor-pointer rounded-md bg-sky-600 px-4 py-2 font-medium text-white transition-colors hover:bg-sky-700"
 			>
-				RREF-le?
+				Claim your RREF-le!
 			</button>
 			<button
 				onclick={() => (showResetConfirm = true)}
-				class="rounded-md px-4 py-2 font-medium text-slate-500 transition-colors hover:bg-slate-200"
+				class="cursor-pointer rounded-md px-4 py-2 font-medium text-slate-500 transition-colors hover:bg-slate-200"
 			>
 				Reset
 			</button>
@@ -130,8 +147,8 @@
 
 {#if showResetConfirm}
 	<ConfirmModal
-		title="Reset attempt?"
-		message="This will discard your current progress on today's Rrefle. This can't be undone."
+		title="Reset this puzzle?"
+		message="This will discard your current progress on today's RREF-le. This can't be undone."
 		confirmLabel="Reset"
 		oncancel={() => (showResetConfirm = false)}
 		onconfirm={handleReset}
