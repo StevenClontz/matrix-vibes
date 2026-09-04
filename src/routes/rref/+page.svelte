@@ -3,7 +3,13 @@
 	import StudentInfoModal from '$lib/StudentInfoModal.svelte';
 	import AlertModal from '$lib/AlertModal.svelte';
 	import ConfirmModal from '$lib/ConfirmModal.svelte';
-	import { generateSkillTestMatrix, isRref, pivotCellKeys, type Matrix } from '$lib/matrix';
+	import {
+		generateSkillTestMatrix,
+		isRref,
+		pivotCellKeys,
+		type Matrix,
+		type HistoryEntry
+	} from '$lib/matrix';
 
 	const MAX_WRONG_ATTEMPTS = 3;
 
@@ -12,6 +18,7 @@
 	let matrix: Matrix = $state<Matrix>([]);
 	let markedCells: Set<string> = $state(new Set());
 	let steps = $state(0);
+	let history: HistoryEntry[] = $state([{ matrix, opLatex: null, kind: null }]);
 	let started = $state(false);
 	let claimResult = $state<'success' | null>(null);
 	let wrongAttempts = $state(0);
@@ -131,7 +138,14 @@
 				</button>
 			</div>
 		{/if}
-		<MatrixView bind:matrix bind:markedCells bind:steps disableColOps hideControls={claimResult === 'success'} />
+		<MatrixView
+			bind:matrix
+			bind:markedCells
+			bind:steps
+			bind:history
+			disableColOps
+			hideControls={claimResult === 'success'}
+		/>
 	{/if}
 </main>
 

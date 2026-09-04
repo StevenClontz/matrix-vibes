@@ -1,7 +1,7 @@
 <script lang="ts">
 	import MatrixView from '$lib/MatrixView.svelte';
 	import NewMatrixModal from '$lib/NewMatrixModal.svelte';
-	import { matrixFromInts, type Matrix } from '$lib/matrix';
+	import { matrixFromInts, type Matrix, type HistoryEntry } from '$lib/matrix';
 
 	let matrix: Matrix = $state(
 		matrixFromInts([
@@ -10,6 +10,7 @@
 			[9, 10, 11, 12]
 		])
 	);
+	let history: HistoryEntry[] = $state([{ matrix, opLatex: null, kind: null }]);
 
 	let showNewMatrixModal = $state(false);
 </script>
@@ -30,7 +31,7 @@
 	>
 		New Matrix
 	</button>
-	<MatrixView bind:matrix />
+	<MatrixView bind:matrix bind:history />
 </main>
 
 {#if showNewMatrixModal}
