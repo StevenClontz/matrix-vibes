@@ -3,7 +3,7 @@
 	import katex from 'katex';
 	import Fraction from 'fraction.js';
 	import interact from 'interactjs';
-	import type { Matrix } from './matrix';
+	import type { Matrix, HistoryEntry } from './matrix';
 	import {
 		scaleRow,
 		scaleCol,
@@ -27,6 +27,7 @@
 		matrix = $bindable(),
 		markedCells = $bindable(new Set<string>()),
 		steps = $bindable(0),
+		history = $bindable<HistoryEntry[]>([{ matrix, opLatex: null, kind: null }]),
 		disableRowOps = false,
 		disableColOps = false,
 		hideControls = false
@@ -34,6 +35,7 @@
 		matrix: Matrix;
 		markedCells?: Set<string>;
 		steps?: number;
+		history?: HistoryEntry[];
 		disableRowOps?: boolean;
 		disableColOps?: boolean;
 		hideControls?: boolean;
@@ -77,13 +79,9 @@
 		}
 	});
 
-	type HistoryEntry = { matrix: Matrix; opLatex: string | null };
-
-	let history = $state<HistoryEntry[]>([{ matrix, opLatex: null }]);
-
 	$effect(() => {
 		if (matrix !== history[history.length - 1].matrix) {
-			history = [{ matrix, opLatex: null }];
+			history = [{ matrix, opLatex: null, kind: null }];
 		}
 	});
 
@@ -286,7 +284,7 @@
 				: scaleCol(matrix, selectedCol!, scaleFactor);
 		if (!matricesEqual(result, matrix)) {
 			matrix = result;
-			history = [...history, { matrix, opLatex }];
+			history = [...history, { matrix, opLatex, kind: 'scale' }];
 			steps += 1;
 		}
 		resetScaleFactor(1);
@@ -322,7 +320,7 @@
 					: addScaledCol(matrix, target, source, scaleFactor);
 		if (!matricesEqual(result, matrix)) {
 			matrix = result;
-			history = [...history, { matrix, opLatex }];
+			history = [...history, { matrix, opLatex, kind: dropMode }];
 			steps += 1;
 		}
 		dropAction = null;

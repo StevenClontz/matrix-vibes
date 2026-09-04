@@ -8,7 +8,8 @@
 		rrefleShareText,
 		isRref,
 		pivotCellKeys,
-		type Matrix
+		type Matrix,
+		type HistoryEntry
 	} from '$lib/matrix';
 
 	const id = rrefleId();
@@ -20,6 +21,7 @@
 	let matrix: Matrix = $state(freshMatrix());
 	let markedCells: Set<string> = $state(new Set());
 	let steps = $state(0);
+	let history: HistoryEntry[] = $state([{ matrix, opLatex: null, kind: null }]);
 	let claimResult = $state<'success' | null>(null);
 	let alertTitle: string | null = $state(null);
 	let alertMessage: string | null = $state(null);
@@ -27,7 +29,7 @@
 	let showInstructions = $state(false);
 	let shareFeedback: string | null = $state(null);
 
-	let shareText = $derived(rrefleShareText(id, matrix));
+	let shareText = $derived(rrefleShareText(id, matrix, history));
 
 	async function handleShare() {
 		if (navigator.share) {
@@ -137,7 +139,14 @@
 			</button>
 		</div>
 	{/if}
-	<MatrixView bind:matrix bind:markedCells bind:steps disableColOps hideControls={claimResult === 'success'} />
+	<MatrixView
+		bind:matrix
+		bind:markedCells
+		bind:steps
+		bind:history
+		disableColOps
+		hideControls={claimResult === 'success'}
+	/>
 </main>
 
 {#if alertMessage && alertTitle}

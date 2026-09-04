@@ -2,6 +2,9 @@ import Fraction from 'fraction.js';
 
 export type Matrix = Fraction[][];
 
+export type HistoryOpKind = 'combine' | 'scale' | 'swap';
+export type HistoryEntry = { matrix: Matrix; opLatex: string | null; kind: HistoryOpKind | null };
+
 export function createMatrix(rows: number, cols: number): Matrix {
 	return Array.from({ length: rows }, () => Array.from({ length: cols }, () => new Fraction(0)));
 }
@@ -367,23 +370,40 @@ export function generateRrefleMatrix(id: number): Matrix {
 	return matrix;
 }
 
-/** Wordle-style result grid: one line per pivot row, 🟩 pivot / 🟨 zero / ⬜ other.
- *  Only meaningful once isRref(matrix) is true. */
-export function rrefleEmojiGrid(matrix: Matrix): string {
+const DIGIT_EMOJI = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'];
+
+/** Wordle-style result grid: one line per pivot row, 🟩 pivot / 🟨 zero / digit
+ *  emoji for other integer values in [1, 9] (⬜ as a fallback otherwise),
+ *  followed by a "combine / scale / swap" move-count summary line. Only
+ *  meaningful once isRref(matrix) is true. */
+export function rrefleEmojiGrid(matrix: Matrix, history: HistoryEntry[]): string {
 	const pivots = pivotCellKeys(matrix);
 	const lines: string[] = [];
 	matrix.forEach((row, i) => {
 		if (!row.some((_, j) => pivots.has(cellKey(i, j)))) return;
 		lines.push(
-			row.map((v, j) => (pivots.has(cellKey(i, j)) ? '🟩' : v.equals(0) ? '🟨' : '⬜')).join('')
+			row
+				.map((v, j) => {
+					if (pivots.has(cellKey(i, j))) return '🟩';
+					if (v.equals(0)) return '🟨';
+					const digit = Math.round(v.abs().valueOf());
+					return digit >= 1 && digit <= 9 && v.abs().equals(digit) ? DIGIT_EMOJI[digit] : '⬜';
+				})
+				.join('')
 		);
 	});
+
+	const combine = history.filter((h) => h.kind === 'combine').length;
+	const scale = history.filter((h) => h.kind === 'scale').length;
+	const swap = history.filter((h) => h.kind === 'swap').length;
+	lines.push(`${combine} / ${scale} / ${swap}`);
+
 	return lines.join('\n');
 }
 
 /** Shareable Wordle-style summary of a completed rrefle. */
-export function rrefleShareText(id: number, matrix: Matrix): string {
-	return `RREF-le #${id}\n\n${rrefleEmojiGrid(matrix)}\n\nmatrix.clontz.org/rrefle`;
+export function rrefleShareText(id: number, matrix: Matrix, history: HistoryEntry[]): string {
+	return `RREF-le #${id}\n\n${rrefleEmojiGrid(matrix, history)}\n\nmatrix.clontz.org/rrefle`;
 }
 
 export function describeSwapCols(c1: number, c2: number): string {
