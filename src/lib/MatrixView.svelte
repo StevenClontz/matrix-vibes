@@ -592,14 +592,14 @@
 	descriptionHtml: string,
 	onSubmit: () => void,
 	onCancel: () => void,
-	controls: Snippet,
+	controls: Snippet<[onSubmit?: () => void]>,
 	submitDisabled: boolean = false
 )}
 	<div
 		class="mt-3 flex flex-col border-t border-slate-200 pt-3 text-sm text-slate-600"
 	>
 		<div class="text-slate-700">
-			{@render controls()}
+			{@render controls(onSubmit)}
 		</div>
 		<div class="text-slate-700 my-2 mx-auto">
 			<span>{@html descriptionHtml}</span>
@@ -622,7 +622,7 @@
 	</div>
 {/snippet}
 
-{#snippet scaleControls(allowZero: boolean = true)}
+{#snippet scaleControls(allowZero: boolean = true, onSubmit?: () => void)}
 	{@const isInvalid = !scaleFactorValid || (!allowZero && scaleFactorIsZero)}
 	<div class="flex items-center justify-center gap-3 my-2">
 		<label>Scaling factor:
@@ -634,6 +634,12 @@
 				scaleFactorText = e.currentTarget.value;
 				const parsed = parseRational(scaleFactorText);
 				if (parsed !== null) scaleFactor = parsed;
+			}}
+			onkeydown={(e) => {
+				if (e.key === 'Enter') {
+					onSubmit?.();
+					e.currentTarget.blur();
+				}
 			}}
 			aria-invalid={isInvalid}
 			class="min-w-10 [field-sizing:content] text-center rounded-md border px-2 py-1 font-mathnum focus:outline-none {isInvalid
@@ -694,11 +700,11 @@
 	</div>
 {/snippet}
 
-{#snippet scaleControlsStrict()}
-	{@render scaleControls(false)}
+{#snippet scaleControlsStrict(onSubmit?: () => void)}
+	{@render scaleControls(false, onSubmit)}
 {/snippet}
 
-{#snippet dropControls()}
+{#snippet dropControls(onSubmit?: () => void)}
 	<div class="flex gap-3 items-center justify-center my-2">
 	<label class="flex items-center gap-1.5">
 		<input type="radio" name="dropMode" value="combine" bind:group={dropMode} />
@@ -711,7 +717,7 @@
 	</div>
 	<div class="mx-auto">
 	{#if dropMode === 'combine'}
-		{@render scaleControls()}
+		{@render scaleControls(true, onSubmit)}
 	{/if}
 	</div>
 {/snippet}
