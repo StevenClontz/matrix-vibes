@@ -20,7 +20,11 @@
 		parseRational,
 		cellKey,
 		matrixToLatex,
-		matricesEqual
+		matricesEqual,
+		detEffectOf,
+		canRemoveRowCol,
+		removeRowCol,
+		describeRemoveRowCol
 	} from './matrix';
 
 	let {
@@ -30,7 +34,10 @@
 		history = $bindable<HistoryEntry[]>([{ matrix, opLatex: null, kind: null }]),
 		disableRowOps = false,
 		disableColOps = false,
-		hideControls = false
+		hideControls = false,
+		detMode = false,
+		onmistake,
+		onremovelast
 	}: {
 		matrix: Matrix;
 		markedCells?: Set<string>;
@@ -39,7 +46,29 @@
 		disableRowOps?: boolean;
 		disableColOps?: boolean;
 		hideControls?: boolean;
+		/** Determinant mode: each operation asks for the new coefficient c in
+		 *  det(original) = c·det(current), and history renders as a chain of equalities. */
+		detMode?: boolean;
+		/** det mode: called (and the step refused) when a step is incorrect. */
+		onmistake?: (message: string) => void;
+		/** det mode: called after a row+column removal leaves the matrix empty. */
+		onremovelast?: () => void;
 	} = $props();
+
+	function coefLatex(c: Fraction): string {
+		if (c.equals(1)) return '';
+		if (c.equals(-1)) return '-';
+		return c.toLatex();
+	}
+
+	let currentDetCoef = $derived(history[history.length - 1].detCoef ?? new Fraction(1));
+	let detCoefText = $state('1');
+	let detCoefParsed = $derived(parseRational(detCoefText));
+	let detCoefValid = $derived(detCoefParsed !== null && !detCoefParsed.equals(0));
+
+	function resetDetCoef() {
+		detCoefText = currentDetCoef.toFraction();
+	}
 
 	function opsDisabled(kind: 'row' | 'col'): boolean {
 		return kind === 'row' ? disableRowOps : disableColOps;
@@ -81,27 +110,31 @@
 
 	$effect(() => {
 		if (matrix !== history[history.length - 1].matrix) {
-			history = [{ matrix, opLatex: null, kind: null }];
+			history = [{ matrix, opLatex: null, kind: null, detCoef: new Fraction(1) }];
 		}
 	});
 
 	let historyItemsHtml = $derived(
 		history.map((entry, idx) =>
 			katex.renderToString(
-				matrixToLatex(entry.matrix, idx === history.length - 1 ? markedCells : undefined),
+				detMode && entry.matrix.length === 0
+					? (entry.detCoef ?? new Fraction(1)).toLatex()
+					: (detMode ? `${coefLatex(entry.detCoef ?? new Fraction(1))}\\det ` : '') +
+							matrixToLatex(entry.matrix, idx === history.length - 1 ? markedCells : undefined),
 				{ throwOnError: false }
 			)
 		)
 	);
 	let historyConnectorsHtml = $derived(
-		history.slice(1).map((entry) =>
-			katex.renderToString(
+		history.slice(1).map((entry) => {
+			const rel = detMode ? '=' : '\\sim';
+			return katex.renderToString(
 				entry.opLatex
-					? `\\begin{array}{c}\\scriptsize ${entry.opLatex}\\\\[3pt]\\sim\\end{array}`
-					: '\\sim',
+					? `\\begin{array}{c}\\scriptsize ${entry.opLatex}\\\\[3pt]${rel}\\end{array}`
+					: rel,
 				{ throwOnError: false }
-			)
-		)
+			);
+		})
 	);
 
 	let historyContainer: HTMLDivElement | undefined;
@@ -223,6 +256,7 @@
 					selectedCol = null;
 					dropMode = 'combine';
 					resetScaleFactor(0);
+					resetDetCoef();
 					dropAction = { kind: current.kind, source, target };
 				}
 			})
@@ -256,6 +290,7 @@
 			selectedRow = i;
 			selectedCol = null;
 			resetScaleFactor(1);
+			resetDetCoef();
 			dropAction = null;
 		}
 	}
@@ -268,12 +303,14 @@
 			selectedCol = j;
 			selectedRow = null;
 			resetScaleFactor(1);
+			resetDetCoef();
 			dropAction = null;
 		}
 	}
 
 	function applyScale() {
 		if (!scaleFactorValid || scaleFactorIsZero) return;
+		if (detMode && !detCoefValid) return;
 		const opLatex =
 			selectedRow !== null
 				? describeScaleRow(selectedRow, scaleFactor)
@@ -283,13 +320,62 @@
 				? scaleRow(matrix, selectedRow, scaleFactor)
 				: scaleCol(matrix, selectedCol!, scaleFactor);
 		if (!matricesEqual(result, matrix)) {
+			if (!detCoefCorrect('scale')) return;
 			matrix = result;
-			history = [...history, { matrix, opLatex, kind: 'scale' }];
+			history = [...history, { matrix, opLatex, kind: 'scale', ...detFields('scale') }];
 			steps += 1;
 		}
 		resetScaleFactor(1);
 		selectedRow = null;
 		selectedCol = null;
+	}
+
+	/** det mode: true if the entered coefficient is right for this operation;
+	 *  otherwise reports a mistake (the caller then refuses the step). */
+	function detCoefCorrect(kind: 'scale' | 'swap' | 'combine'): boolean {
+		if (!detMode) return true;
+		const expected = currentDetCoef.div(detEffectOf(kind, scaleFactor));
+		if (detCoefParsed!.equals(expected)) return true;
+		onmistake?.('That coefficient is incorrect, so the operation was not applied.');
+		return false;
+	}
+
+	function detFields(kind: 'scale' | 'swap' | 'combine') {
+		if (!detMode) return {};
+		return { detCoef: detCoefParsed!, detEffect: detEffectOf(kind, scaleFactor) };
+	}
+
+	let removeIndex = $derived(selectedRow ?? selectedCol);
+	let canRemoveSelected = $derived(
+		removeIndex !== null &&
+			canRemoveRowCol(matrix, selectedRow !== null ? 'row' : 'col', removeIndex)
+	);
+
+	function removeSelected() {
+		if (!detMode || removeIndex === null) return;
+		const i = removeIndex;
+		if (!canRemoveSelected) {
+			const label = selectedRow !== null ? `Row ${i + 1}` : `Column ${i + 1}`;
+			onmistake?.(
+				`${label} and its matching ${selectedRow !== null ? 'column' : 'row'} can't be removed without changing the determinant, so nothing was removed.`
+			);
+			return;
+		}
+		matrix = removeRowCol(matrix, i);
+		history = [
+			...history,
+			{
+				matrix,
+				opLatex: describeRemoveRowCol(i),
+				kind: 'remove',
+				detCoef: currentDetCoef,
+				detEffect: new Fraction(1)
+			}
+		];
+		steps += 1;
+		markedCells = new Set();
+		cancelScale();
+		if (matrix.length === 0) onremovelast?.();
 	}
 
 	function cancelScale() {
@@ -301,6 +387,7 @@
 	function applyDropAction() {
 		if (!dropAction) return;
 		if (dropMode === 'combine' && !scaleFactorValid) return;
+		if (detMode && !detCoefValid) return;
 		const { kind, source, target } = dropAction;
 		const opLatex =
 			dropMode === 'swap'
@@ -319,8 +406,9 @@
 					? swapCols(matrix, source, target)
 					: addScaledCol(matrix, target, source, scaleFactor);
 		if (!matricesEqual(result, matrix)) {
+			if (!detCoefCorrect(dropMode)) return;
 			matrix = result;
-			history = [...history, { matrix, opLatex, kind: dropMode }];
+			history = [...history, { matrix, opLatex, kind: dropMode, ...detFields(dropMode) }];
 			steps += 1;
 		}
 		dropAction = null;
@@ -561,8 +649,18 @@
 			applyScale,
 			cancelScale,
 			scaleControlsStrict,
-			!scaleFactorValid || scaleFactorIsZero
+			!scaleFactorValid || scaleFactorIsZero || (detMode && !detCoefValid)
 		)}
+		{#if detMode && removeIndex !== null}
+			<div class="mt-3 flex justify-center border-t border-slate-200 pt-3 text-sm">
+				<button
+					onclick={removeSelected}
+					class="rounded-md border border-violet-300 px-3 py-1 font-medium text-violet-700 transition-colors hover:bg-violet-50"
+				>
+					Remove row {removeIndex + 1} + column {removeIndex + 1}
+				</button>
+			</div>
+		{/if}
 	{/if}
 
 	{#if dropAction}
@@ -581,7 +679,7 @@
 			applyDropAction,
 			cancelDropAction,
 			dropControls,
-			dropMode === 'combine' && !scaleFactorValid
+			(dropMode === 'combine' && !scaleFactorValid) || (detMode && !detCoefValid)
 		)}
 	{/if}
 </div>
@@ -604,6 +702,9 @@
 		<div class="text-slate-700 my-2 mx-auto">
 			<span>{@html descriptionHtml}</span>
 		</div>
+		{#if detMode}
+			{@render detCoefControls(onSubmit)}
+		{/if}
 		<div class="flex flex-wrap items-center justify-center gap-3">
 			<button
 				onclick={onSubmit}
@@ -697,6 +798,35 @@
 		>
 			+
 		</button>
+	</div>
+{/snippet}
+
+{#snippet detCoefControls(onSubmit: () => void)}
+	{@const n = history.length - 1}
+	{@const newCoef = detCoefValid ? detCoefParsed! : null}
+	{@const equationHtml = katex.renderToString(
+		`${coefLatex(currentDetCoef)}\\det M_{${n}} = ${newCoef ? coefLatex(newCoef) : '\\,?\\,'}\\det M_{${n + 1}}`,
+		{ throwOnError: false }
+	)}
+	<div class="flex flex-wrap items-center justify-center gap-3 my-2">
+		<label>New coefficient:
+		<input
+			type="text"
+			inputmode="text"
+			value={detCoefText}
+			oninput={(e) => (detCoefText = e.currentTarget.value)}
+			onkeydown={(e) => {
+				if (e.key === 'Enter') {
+					onSubmit();
+					e.currentTarget.blur();
+				}
+			}}
+			aria-invalid={!detCoefValid}
+			class="min-w-10 [field-sizing:content] text-center rounded-md border px-2 py-1 font-mathnum focus:outline-none {detCoefValid
+				? 'border-slate-300 text-slate-700 focus:border-violet-400'
+				: 'border-red-400 text-red-600 focus:border-red-500'}"
+		/></label>
+		<span class="text-slate-700">{@html equationHtml}</span>
 	</div>
 {/snippet}
 

@@ -23,6 +23,7 @@
 	<div class="flex items-center gap-8 border-b border-slate-200 px-6 pb-2">
 		<a href="/rrefle" class="text-slate-500 hover:text-slate-700 hover:underline">RREF-le!</a>
 		<a href="/rref" class="text-slate-500 hover:text-slate-700 hover:underline">RREF Skill Test</a>
+		<a href="/det" class="text-slate-500 hover:text-slate-700 hover:underline">Determinant Skill Test</a>
 	</div>
 	<h1 class="text-2xl font-bold text-slate-800">Row/Column Operation Calculator</h1>
 	<button

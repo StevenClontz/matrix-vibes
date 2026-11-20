@@ -2,8 +2,16 @@ import Fraction from 'fraction.js';
 
 export type Matrix = Fraction[][];
 
-export type HistoryOpKind = 'combine' | 'scale' | 'swap';
-export type HistoryEntry = { matrix: Matrix; opLatex: string | null; kind: HistoryOpKind | null };
+export type HistoryOpKind = 'combine' | 'scale' | 'swap' | 'remove';
+export type HistoryEntry = {
+	matrix: Matrix;
+	opLatex: string | null;
+	kind: HistoryOpKind | null;
+	/** det mode: coefficient c entered by the student, asserting det(original) = c·det(matrix). */
+	detCoef?: Fraction;
+	/** det mode: true factor this entry's operation multiplies the determinant by. */
+	detEffect?: Fraction;
+};
 
 export function createMatrix(rows: number, cols: number): Matrix {
 	return Array.from({ length: rows }, () => Array.from({ length: cols }, () => new Fraction(0)));
@@ -417,4 +425,87 @@ export function describeScaleCol(c: number, scalar: Fraction): string {
 export function describeAddScaledCol(target: number, source: number, scalar: Fraction): string {
 	const sign = scalar.compare(0) < 0 ? `- ${scalar.abs().toLatex()}` : `+ ${scalar.toLatex()}`;
 	return `C_{${target + 1}} ${sign} C_{${source + 1}} \\rightarrow C_{${target + 1}}`;
+}
+
+/** Factor an elementary operation multiplies the determinant by. */
+export function detEffectOf(kind: HistoryOpKind, scalar: Fraction): Fraction {
+	if (kind === 'swap') return new Fraction(-1);
+	if (kind === 'scale') return scalar;
+	return new Fraction(1);
+}
+
+/** True if row (or column) i of square m is 1 on the diagonal and 0 elsewhere,
+ *  so removing row i and column i (cofactor expansion) preserves the determinant. */
+export function canRemoveRowCol(m: Matrix, kind: 'row' | 'col', i: number): boolean {
+	if (i >= m.length || m.some((row) => row.length !== m.length)) return false;
+	const line = kind === 'row' ? m[i] : m.map((row) => row[i]);
+	return line.every((v, j) => v.equals(j === i ? 1 : 0));
+}
+
+/** Copy of m without row i and column i. */
+export function removeRowCol(m: Matrix, i: number): Matrix {
+	return m.filter((_, r) => r !== i).map((row) => row.filter((_, c) => c !== i));
+}
+
+export function describeRemoveRowCol(i: number): string {
+	return `\\text{del } R_{${i + 1}}, C_{${i + 1}}`;
+}
+
+/**
+ * Applies one random row or column add-scaled operation (which preserves the
+ * determinant). Retries until the matrix changes and no cell exceeds
+ * maxCellAbs in absolute value (best effort, capped).
+ */
+export function randomCombineOperation(
+	m: Matrix,
+	maxAbsScalar: number,
+	maxCellAbs: number,
+	rng: () => number = Math.random
+): Matrix {
+	const MAX_ATTEMPTS = 50;
+	let result = m;
+	for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+		const scalar = new Fraction(randomNonZeroInt(maxAbsScalar, rng));
+		if (rng() < 0.5) {
+			const [target, source] = randomDistinctPair(m.length, rng);
+			result = addScaledRow(m, target, source, scalar);
+		} else {
+			const [target, source] = randomDistinctPair(m[0].length, rng);
+			result = addScaledCol(m, target, source, scalar);
+		}
+		if (!matricesEqual(result, m) && withinAbsBound(result, maxCellAbs)) return result;
+	}
+	return result;
+}
+
+const DET_TEST_SIZE = 4;
+const DET_TEST_MAX_ABS_DET = 19;
+const DET_TEST_MAX_ABS_SCALAR = 3;
+const DET_TEST_MAX_CELL_ABS_VALUE = 30;
+const DET_TEST_MAX_OPS = 30;
+
+/**
+ * Generates a random 4x4 matrix with a random nonzero integer determinant in
+ * [-19, 19] and no zero cells: starts from the identity with one diagonal
+ * entry replaced by the determinant, then scrambles it with random row/column
+ * combine operations (which preserve the determinant).
+ */
+export function generateDetTestMatrix(): { matrix: Matrix; det: number } {
+	while (true) {
+		const det = randomNonZeroInt(DET_TEST_MAX_ABS_DET);
+		let matrix = identityMatrix(DET_TEST_SIZE);
+		const k = randomInt(0, DET_TEST_SIZE - 1);
+		matrix[k][k] = new Fraction(det);
+
+		let ops = 0;
+		while (hasZeroCell(matrix) && ops < DET_TEST_MAX_OPS) {
+			matrix = randomCombineOperation(
+				matrix,
+				DET_TEST_MAX_ABS_SCALAR,
+				DET_TEST_MAX_CELL_ABS_VALUE
+			);
+			ops++;
+		}
+		if (!hasZeroCell(matrix)) return { matrix, det };
+	}
 }
