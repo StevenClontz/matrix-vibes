@@ -24,7 +24,8 @@
 		detEffectOf,
 		canRemoveRowCol,
 		removeRowCol,
-		describeRemoveRowCol
+		describeRemoveRowCol,
+		coefLatex
 	} from './matrix';
 
 	let {
@@ -37,7 +38,7 @@
 		hideControls = false,
 		detMode = false,
 		onmistake,
-		onremovelast
+		detFinalValue = null
 	}: {
 		matrix: Matrix;
 		markedCells?: Set<string>;
@@ -51,15 +52,9 @@
 		detMode?: boolean;
 		/** det mode: called (and the step refused) when a step is incorrect. */
 		onmistake?: (message: string) => void;
-		/** det mode: called after a row+column removal leaves the matrix empty. */
-		onremovelast?: () => void;
+		/** det mode: once solved, the determinant's value, shown as "= value" at the end of the chain. */
+		detFinalValue?: Fraction | number | null;
 	} = $props();
-
-	function coefLatex(c: Fraction): string {
-		if (c.equals(1)) return '';
-		if (c.equals(-1)) return '-';
-		return c.toLatex();
-	}
 
 	let currentDetCoef = $derived(history[history.length - 1].detCoef ?? new Fraction(1));
 	let detCoefText = $state('1');
@@ -120,10 +115,8 @@
 	let historyItemsHtml = $derived(
 		history.map((entry, idx) =>
 			katex.renderToString(
-				detMode && entry.matrix.length === 0
-					? (entry.detCoef ?? new Fraction(1)).toLatex()
-					: (detMode ? `${coefLatex(entry.detCoef ?? new Fraction(1))}\\det ` : '') +
-							matrixToLatex(entry.matrix, idx === history.length - 1 ? markedCells : undefined),
+				(detMode ? `${coefLatex(entry.detCoef ?? new Fraction(1))}\\det ` : '') +
+					matrixToLatex(entry.matrix, idx === history.length - 1 ? markedCells : undefined),
 				{ throwOnError: false }
 			)
 		)
@@ -140,6 +133,12 @@
 		})
 	);
 
+	let finalValueHtml = $derived(
+		detMode && detFinalValue !== null
+			? katex.renderToString(new Fraction(detFinalValue).toLatex(), { throwOnError: false })
+			: null
+	);
+
 	let historyContainer: HTMLDivElement | undefined;
 	let historyContentRow: HTMLDivElement | undefined;
 	let historyPaddingLeft = $state(0);
@@ -147,6 +146,7 @@
 
 	$effect(() => {
 		void historyItemsHtml;
+		void finalValueHtml;
 		const container = historyContainer;
 		const contentRow = historyContentRow;
 		if (!container || !contentRow) return;
@@ -353,6 +353,11 @@
 	// det mode: whether the selection panel scales or removes the selected row/column.
 	let selectMode = $state<'scale' | 'remove'>('scale');
 	let removeIndex = $derived(selectedRow ?? selectedCol);
+	// Removals stop at 2x2; the student then solves the 2x2 determinant directly.
+	let canRemoveAny = $derived(matrix.length > 2);
+	$effect(() => {
+		if (!canRemoveAny) selectMode = 'scale';
+	});
 	let removePending = $derived(detMode && selectMode === 'remove' && removeIndex !== null);
 	let canRemoveSelected = $derived(
 		removeIndex !== null &&
@@ -360,7 +365,7 @@
 	);
 
 	function removeSelected() {
-		if (!detMode || removeIndex === null) return;
+		if (!detMode || removeIndex === null || !canRemoveAny) return;
 		const i = removeIndex;
 		if (!canRemoveSelected) {
 			const label = selectedRow !== null ? `Row ${i + 1}` : `Column ${i + 1}`;
@@ -383,7 +388,6 @@
 		steps += 1;
 		markedCells = new Set();
 		cancelScale();
-		if (matrix.length === 0) onremovelast?.();
 	}
 
 	function applySelection() {
@@ -522,10 +526,18 @@
 				{#if idx > 0}
 					<span class="text-slate-400">{@html historyConnectorsHtml[idx - 1]}</span>
 				{/if}
-				<span class="history-item {idx < historyItemsHtml.length - 1 ? 'text-slate-400' : ''}">
+				<span
+					class="history-item {idx < historyItemsHtml.length - 1 || finalValueHtml
+						? 'text-slate-400'
+						: ''}"
+				>
 					{@html itemHtml}
 				</span>
 			{/each}
+			{#if finalValueHtml}
+				<span class="text-slate-400">=</span>
+				<span class="history-item text-lg font-semibold">{@html finalValueHtml}</span>
+			{/if}
 		</div>
 	</div>
 </div>
@@ -853,8 +865,14 @@
 		<input type="radio" name="selectMode" value="scale" bind:group={selectMode} />
 		Scale
 	</label>
-	<label class="flex items-center gap-1.5">
-		<input type="radio" name="selectMode" value="remove" bind:group={selectMode} />
+	<label class="flex items-center gap-1.5 {canRemoveAny ? '' : 'cursor-not-allowed opacity-40'}">
+		<input
+			type="radio"
+			name="selectMode"
+			value="remove"
+			bind:group={selectMode}
+			disabled={!canRemoveAny}
+		/>
 		Remove
 	</label>
 	</div>

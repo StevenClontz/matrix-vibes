@@ -1,11 +1,15 @@
 <script lang="ts">
 	import Fraction from 'fraction.js';
+	import katex from 'katex';
 	import MatrixView from '$lib/MatrixView.svelte';
 	import StudentInfoModal from '$lib/StudentInfoModal.svelte';
 	import AlertModal from '$lib/AlertModal.svelte';
 	import ConfirmModal from '$lib/ConfirmModal.svelte';
 	import {
 		generateDetTestMatrix,
+		parseRational,
+		coefLatex,
+		matrixToLatex,
 		type Matrix,
 		type HistoryEntry
 	} from '$lib/matrix';
@@ -30,6 +34,39 @@
 	let showResetConfirm = $state(false);
 
 	let currentCoef = $derived(history[history.length - 1].detCoef ?? new Fraction(1));
+
+	let solving = $state(false);
+	let solveText = $state('');
+	let solveParsed = $derived(parseRational(solveText));
+	let solveLabelHtml = $derived(
+		matrix.length === 2
+			? katex.renderToString(
+					`\\det M_0 = ${coefLatex(currentCoef)}\\det ${matrixToLatex(matrix)} =`,
+					{ throwOnError: false }
+				)
+			: ''
+	);
+
+	// The Solve form only applies while the matrix is 2x2 (e.g. close it after an undo).
+	$effect(() => {
+		if (matrix.length !== 2) solving = false;
+	});
+
+	function openSolve() {
+		solveText = '';
+		solving = true;
+	}
+
+	function submitSolve() {
+		if (solveParsed === null) return;
+		if (solveParsed.equals(trueDet)) {
+			solving = false;
+			result = 'success';
+			finishedAt = new Date();
+			return;
+		}
+		handleMistake("That isn't the determinant of the original matrix.");
+	}
 
 	function newMatrix() {
 		const generated = generateDetTestMatrix();
@@ -75,18 +112,6 @@
 		alertMessage = message;
 	}
 
-	/** Called by MatrixView once the last row and column are removed. Every
-	 *  recorded step was verified as it was made, so this should always succeed. */
-	function checkFinished() {
-		if (currentCoef.equals(trueDet)) {
-			result = 'success';
-			finishedAt = new Date();
-			return;
-		}
-		alertTitle = 'Something went wrong';
-		alertMessage = 'Not quite — undo and double-check your work.';
-	}
-
 	function handleReset() {
 		started = false;
 		result = null;
@@ -96,6 +121,8 @@
 		mistakes = 0;
 		isPracticeMode = false;
 		finishedAt = null;
+		solving = false;
+		solveText = '';
 		showResetConfirm = false;
 	}
 </script>
@@ -110,7 +137,7 @@
 		{#if result !== null}
 			{#if result === 'success'}
 				<h2 id="det-result-title" class="text-xl font-bold text-sky-700">
-					Determinant Found! 🎉 det = {currentCoef.toFraction()}
+					Determinant Found! 🎉
 				</h2>
 			{:else}
 				<h2 id="det-result-title" class="text-xl font-bold text-red-700">Attempt Ended</h2>
@@ -130,10 +157,8 @@
 			</button>
 		{:else}
 			<p class="max-w-2xl text-sm text-slate-800">
-				Use row and column operations to make a row or column all 0s except for a 1 on the
-				diagonal, then select it and remove that row and column. After each operation, enter
-				the new coefficient so that the equation of determinants stays true. Repeat until the
-				whole matrix is removed: the remaining coefficient is the determinant.
+				Use the below controls to reduce the 4x4 determinant to a 2x2 determinant,
+				and then solve for its value.
 			</p>
 			<p class="text-sm text-slate-600">
 				{#if isPracticeMode}
@@ -145,6 +170,14 @@
 				{/if}
 			</p>
 			<div class="flex items-center gap-3">
+				{#if matrix.length === 2}
+					<button
+						onclick={openSolve}
+						class="rounded-md bg-sky-600 px-4 py-2 font-medium text-white transition-colors hover:bg-sky-700"
+					>
+						Solve
+					</button>
+				{/if}
 				<button
 					onclick={() => (showResetConfirm = true)}
 					class="rounded-md px-4 py-2 font-medium text-slate-500 transition-colors hover:bg-slate-200"
@@ -152,6 +185,44 @@
 					Reset
 				</button>
 			</div>
+			{#if solving}
+				<div
+					class="flex flex-col items-center gap-3 rounded-lg border border-slate-300 bg-white p-4 shadow-sm"
+				>
+					<div class="flex flex-wrap items-center justify-center gap-2 text-slate-800">
+						<span>{@html solveLabelHtml}</span>
+						<!-- svelte-ignore a11y_autofocus -->
+						<input
+							type="text"
+							autofocus
+							aria-label="Determinant of the original matrix"
+							bind:value={solveText}
+							onkeydown={(e) => {
+								if (e.key === 'Enter') submitSolve();
+							}}
+							class="min-w-16 [field-sizing:content] rounded-md border px-2 py-1 text-center font-mathnum focus:outline-none {solveText ===
+								'' || solveParsed !== null
+								? 'border-slate-300 text-slate-700 focus:border-sky-500'
+								: 'border-red-400 text-red-600 focus:border-red-500'}"
+						/>
+					</div>
+					<div class="flex items-center gap-3">
+						<button
+							onclick={submitSolve}
+							disabled={solveParsed === null}
+							class="rounded-md bg-sky-600 px-3 py-1 font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+						>
+							Submit
+						</button>
+						<button
+							onclick={() => (solving = false)}
+							class="rounded-md px-3 py-1 font-medium text-slate-500 transition-colors hover:bg-slate-100"
+						>
+							Cancel
+						</button>
+					</div>
+				</div>
+			{/if}
 		{/if}
 		<MatrixView
 			bind:matrix
@@ -159,7 +230,7 @@
 			bind:history
 			detMode
 			onmistake={handleMistake}
-			onremovelast={checkFinished}
+			detFinalValue={result === 'success' ? trueDet : null}
 			hideControls={result !== null}
 		/>
 	{/if}

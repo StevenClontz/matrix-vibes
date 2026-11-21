@@ -427,6 +427,13 @@ export function describeAddScaledCol(target: number, source: number, scalar: Fra
 	return `C_{${target + 1}} ${sign} C_{${source + 1}} \\rightarrow C_{${target + 1}}`;
 }
 
+/** LaTeX for a coefficient in front of \\det: omitted when 1, a bare minus sign when -1. */
+export function coefLatex(c: Fraction): string {
+	if (c.equals(1)) return '';
+	if (c.equals(-1)) return '-';
+	return c.toLatex();
+}
+
 /** Factor an elementary operation multiplies the determinant by. */
 export function detEffectOf(kind: HistoryOpKind, scalar: Fraction): Fraction {
 	if (kind === 'swap') return new Fraction(-1);
