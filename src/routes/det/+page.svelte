@@ -41,7 +41,7 @@
 	let solveLabelHtml = $derived(
 		matrix.length === 2
 			? katex.renderToString(
-					`\\det M_0 = ${coefLatex(currentCoef)}\\det ${matrixToLatex(matrix)} =`,
+					`\\det ${matrixToLatex(history[0].matrix)} = ${coefLatex(currentCoef)}\\det ${matrixToLatex(matrix)} =`,
 					{ throwOnError: false }
 				)
 			: ''

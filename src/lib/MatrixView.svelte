@@ -826,16 +826,16 @@
 
 {#snippet detCoefControls(onSubmit: () => void)}
 	{@const n = history.length - 1}
-	{@const newCoef = detCoefValid ? detCoefParsed! : null}
-	{@const equationHtml = katex.renderToString(
-		`${coefLatex(currentDetCoef)}\\det M_{${n}} = ${newCoef ? coefLatex(newCoef) : '\\,?\\,'}\\det M_{${n + 1}}`,
-		{ throwOnError: false }
-	)}
-	<div class="flex flex-wrap items-center justify-center gap-3 my-2">
-		<label>New coefficient:
+	{@const lhsHtml = katex.renderToString(`${coefLatex(currentDetCoef)}\\det M_{${n}} =`, {
+		throwOnError: false
+	})}
+	{@const rhsHtml = katex.renderToString(`\\det M_{${n + 1}}`, { throwOnError: false })}
+	<div class="flex flex-wrap items-center justify-center gap-2 my-2 text-slate-700">
+		<span>{@html lhsHtml}</span>
 		<input
 			type="text"
 			inputmode="text"
+			aria-label="New coefficient"
 			value={detCoefText}
 			oninput={(e) => (detCoefText = e.currentTarget.value)}
 			onkeydown={(e) => {
@@ -848,8 +848,8 @@
 			class="min-w-10 [field-sizing:content] text-center rounded-md border px-2 py-1 font-mathnum focus:outline-none {detCoefValid
 				? 'border-slate-300 text-slate-700 focus:border-violet-400'
 				: 'border-red-400 text-red-600 focus:border-red-500'}"
-		/></label>
-		<span class="text-slate-700">{@html equationHtml}</span>
+		/>
+		<span>{@html rhsHtml}</span>
 	</div>
 {/snippet}
 
