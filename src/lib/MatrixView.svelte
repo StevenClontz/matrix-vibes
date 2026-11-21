@@ -84,6 +84,9 @@
 	let scaleFactorText = $state('1');
 	let scaleFactorValid = $derived(parseRational(scaleFactorText) !== null);
 	let scaleFactorIsZero = $derived(scaleFactorValid && scaleFactor.equals(0));
+	// No-op operations: scaling by 1, or combining with a multiple of 0.
+	let scaleIsNoop = $derived(scaleFactorValid && scaleFactor.equals(1));
+	let combineIsNoop = $derived(scaleFactorIsZero);
 	let scaleSliderMin = $state(-10);
 	let scaleSliderMax = $state(10);
 	let scaleFactorSliderValue = $derived.by(() => {
@@ -309,7 +312,7 @@
 	}
 
 	function applyScale() {
-		if (!scaleFactorValid || scaleFactorIsZero) return;
+		if (!scaleFactorValid || scaleFactorIsZero || scaleIsNoop) return;
 		if (detMode && !detCoefValid) return;
 		const opLatex =
 			selectedRow !== null
@@ -386,7 +389,7 @@
 
 	function applyDropAction() {
 		if (!dropAction) return;
-		if (dropMode === 'combine' && !scaleFactorValid) return;
+		if (dropMode === 'combine' && (!scaleFactorValid || combineIsNoop)) return;
 		if (detMode && !detCoefValid) return;
 		const { kind, source, target } = dropAction;
 		const opLatex =
@@ -649,7 +652,7 @@
 			applyScale,
 			cancelScale,
 			scaleControlsStrict,
-			!scaleFactorValid || scaleFactorIsZero || (detMode && !detCoefValid)
+			!scaleFactorValid || scaleFactorIsZero || scaleIsNoop || (detMode && !detCoefValid)
 		)}
 		{#if detMode && removeIndex !== null}
 			<div class="mt-3 flex justify-center border-t border-slate-200 pt-3 text-sm">
@@ -679,7 +682,8 @@
 			applyDropAction,
 			cancelDropAction,
 			dropControls,
-			(dropMode === 'combine' && !scaleFactorValid) || (detMode && !detCoefValid)
+			(dropMode === 'combine' && (!scaleFactorValid || combineIsNoop)) ||
+				(detMode && !detCoefValid)
 		)}
 	{/if}
 </div>
