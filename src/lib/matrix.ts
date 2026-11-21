@@ -448,7 +448,7 @@ export function removeRowCol(m: Matrix, i: number): Matrix {
 }
 
 export function describeRemoveRowCol(i: number): string {
-	return `\\text{del } R_{${i + 1}}, C_{${i + 1}}`;
+	return `\\cancel{R_{${i + 1}}}, \\cancel{C_{${i + 1}}}`;
 }
 
 /**

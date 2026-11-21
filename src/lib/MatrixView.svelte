@@ -294,6 +294,7 @@
 			selectedCol = null;
 			resetScaleFactor(1);
 			resetDetCoef();
+			selectMode = 'scale';
 			dropAction = null;
 		}
 	}
@@ -307,6 +308,7 @@
 			selectedRow = null;
 			resetScaleFactor(1);
 			resetDetCoef();
+			selectMode = 'scale';
 			dropAction = null;
 		}
 	}
@@ -348,7 +350,10 @@
 		return { detCoef: detCoefParsed!, detEffect: detEffectOf(kind, scaleFactor) };
 	}
 
+	// det mode: whether the selection panel scales or removes the selected row/column.
+	let selectMode = $state<'scale' | 'remove'>('scale');
 	let removeIndex = $derived(selectedRow ?? selectedCol);
+	let removePending = $derived(detMode && selectMode === 'remove' && removeIndex !== null);
 	let canRemoveSelected = $derived(
 		removeIndex !== null &&
 			canRemoveRowCol(matrix, selectedRow !== null ? 'row' : 'col', removeIndex)
@@ -381,8 +386,14 @@
 		if (matrix.length === 0) onremovelast?.();
 	}
 
+	function applySelection() {
+		if (selectMode === 'remove') removeSelected();
+		else applyScale();
+	}
+
 	function cancelScale() {
 		resetScaleFactor(1);
+		selectMode = 'scale';
 		selectedRow = null;
 		selectedCol = null;
 	}
@@ -593,8 +604,9 @@
 							(draggedRow !== null && dragTargetRow === i && draggedRow !== i) ||
 							(draggedCol !== null && dragTargetCol === j && draggedCol !== j)}
 						{@const dragPreview = isDragTarget ? { from: value, to: value, showArrow: true } : null}
+						{@const willRemove = removePending && (i === removeIndex || j === removeIndex)}
 						{@const scalePreview =
-							selectedRow === i || selectedCol === j
+							!removePending && (selectedRow === i || selectedCol === j)
 								? { from: value, to: value.mul(scaleFactor), showArrow: true }
 								: null}
 						{@const preview = isAnyDragActive ? dragPreview : (scalePreview ?? computeDropPreview(i, j))}
@@ -611,7 +623,9 @@
 								onmouseleave={() => { hoveredRow = null; hoveredCol = null; }}
 								onfocus={() => { hoveredRow = i; hoveredCol = j; }}
 								onblur={() => { hoveredRow = null; hoveredCol = null; }}
-								class="flex min-w-10 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border px-2 py-1 text-center font-mathnum text-slate-700 transition-colors sm:min-w-20 sm:flex-row sm:gap-1.5 sm:px-3 sm:py-1.5 {marked
+								class="flex min-w-10 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border px-2 py-1 text-center font-mathnum transition-colors sm:min-w-20 sm:flex-row sm:gap-1.5 sm:px-3 sm:py-1.5 {willRemove
+									? 'bg-slate-100 text-slate-300 line-through'
+									: 'text-slate-700'} {marked
 									? 'border-violet-500'
 									: 'border-transparent'} {isDragging
 									? 'bg-violet-50'
@@ -642,28 +656,22 @@
 	</table>
 
 	{#if selectedRow !== null || selectedCol !== null}
-		{@const latex =
-			selectedRow !== null
+		{@const latex = removePending
+			? describeRemoveRowCol(removeIndex!)
+			: selectedRow !== null
 				? describeScaleRow(selectedRow, scaleFactor)
 				: describeScaleCol(selectedCol!, scaleFactor)}
 		{@const descriptionHtml = katex.renderToString(latex, { throwOnError: false })}
 		{@render controlPanel(
 			descriptionHtml,
-			applyScale,
+			applySelection,
 			cancelScale,
-			scaleControlsStrict,
-			!scaleFactorValid || scaleFactorIsZero || scaleIsNoop || (detMode && !detCoefValid)
+			detMode ? selectControls : scaleControlsStrict,
+			removePending
+				? false
+				: !scaleFactorValid || scaleFactorIsZero || scaleIsNoop || (detMode && !detCoefValid),
+			!removePending
 		)}
-		{#if detMode && removeIndex !== null}
-			<div class="mt-3 flex justify-center border-t border-slate-200 pt-3 text-sm">
-				<button
-					onclick={removeSelected}
-					class="rounded-md border border-violet-300 px-3 py-1 font-medium text-violet-700 transition-colors hover:bg-violet-50"
-				>
-					Remove row {removeIndex + 1} + column {removeIndex + 1}
-				</button>
-			</div>
-		{/if}
 	{/if}
 
 	{#if dropAction}
@@ -695,7 +703,8 @@
 	onSubmit: () => void,
 	onCancel: () => void,
 	controls: Snippet<[onSubmit?: () => void]>,
-	submitDisabled: boolean = false
+	submitDisabled: boolean = false,
+	showDetCoef: boolean = true
 )}
 	<div
 		class="mt-3 flex flex-col border-t border-slate-200 pt-3 text-sm text-slate-600"
@@ -706,7 +715,7 @@
 		<div class="text-slate-700 my-2 mx-auto">
 			<span>{@html descriptionHtml}</span>
 		</div>
-		{#if detMode}
+		{#if detMode && showDetCoef}
 			{@render detCoefControls(onSubmit)}
 		{/if}
 		<div class="flex flex-wrap items-center justify-center gap-3">
@@ -836,6 +845,24 @@
 
 {#snippet scaleControlsStrict(onSubmit?: () => void)}
 	{@render scaleControls(false, onSubmit)}
+{/snippet}
+
+{#snippet selectControls(onSubmit?: () => void)}
+	<div class="flex gap-3 items-center justify-center my-2">
+	<label class="flex items-center gap-1.5">
+		<input type="radio" name="selectMode" value="scale" bind:group={selectMode} />
+		Scale
+	</label>
+	<label class="flex items-center gap-1.5">
+		<input type="radio" name="selectMode" value="remove" bind:group={selectMode} />
+		Remove
+	</label>
+	</div>
+	<div class="mx-auto">
+	{#if selectMode === 'scale'}
+		{@render scaleControls(false, onSubmit)}
+	{/if}
+	</div>
 {/snippet}
 
 {#snippet dropControls(onSubmit?: () => void)}
