@@ -360,18 +360,16 @@
 	});
 	let removePending = $derived(detMode && selectMode === 'remove' && removeIndex !== null);
 	let canRemoveSelected = $derived(
+		// Removing row k + column k is legal if either line is 1 on the diagonal and 0 elsewhere.
 		removeIndex !== null &&
-			canRemoveRowCol(matrix, selectedRow !== null ? 'row' : 'col', removeIndex)
+			(canRemoveRowCol(matrix, 'row', removeIndex) || canRemoveRowCol(matrix, 'col', removeIndex))
 	);
 
 	function removeSelected() {
 		if (!detMode || removeIndex === null || !canRemoveAny) return;
 		const i = removeIndex;
 		if (!canRemoveSelected) {
-			const label = selectedRow !== null ? `Row ${i + 1}` : `Column ${i + 1}`;
-			onmistake?.(
-				`${label} and its matching ${selectedRow !== null ? 'column' : 'row'} can't be removed without changing the determinant, so nothing was removed.`
-			);
+			onmistake?.('Removing this column and row is not a legal operation, so nothing was removed.');
 			return;
 		}
 		matrix = removeRowCol(matrix, i);
